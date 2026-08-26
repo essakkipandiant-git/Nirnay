@@ -1,2 +1,6 @@
 allowBuilds:
-  msw: set this to true or false
+  msw: true
+
+overrides:
+  hono: "4.12.25"
+
