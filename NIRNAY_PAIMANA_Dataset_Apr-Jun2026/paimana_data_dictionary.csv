@@ -1,0 +1,35 @@
+﻿field,definition,source_type
+project_snapshot_id,Unique project-month identifier; derived from project_code + snapshot_month.,Derived
+project_code,PAIMANA project code from Table 6.,PAIMANA Table 6
+legacy_ocms_code,Legacy OCMS code where supplied.,PAIMANA Table 6
+pmgid,PMGID where supplied.,PAIMANA Table 6
+project_name,Project name.,PAIMANA Table 6
+agency,Implementing agency shown with the project.,PAIMANA Table 6
+ministry,Ministry/department heading propagated to projects until the next heading.,PAIMANA Table 6
+sector,Sector heading propagated to projects until the next sector heading.,PAIMANA Table 6
+state,State/UT/region shown for the project.,PAIMANA Table 6
+approval_date,"Date of approval, normalized to YYYY-MM-DD where month/year is supplied.",PAIMANA Table 6
+planned_start_date,Start date from the Start Date field.,PAIMANA Table 6
+planned_completion_date,"Original/Target DoC, normalized.",PAIMANA Table 6
+expected_completion_date,"Revised DoC, normalized where supplied.",PAIMANA Table 6
+original_cost_cr,Original project cost in Rs crore.,PAIMANA Table 6
+revised_cost_cr,Revised project cost in Rs crore; missing when not reported.,PAIMANA Table 6
+cumulative_expenditure_cr,Cumulative expenditure in Rs crore.,PAIMANA Table 6
+physical_progress_pct,Reported physical progress percentage.,PAIMANA Table 6
+financial_progress_pct,Derived as cumulative_expenditure_cr / revised_cost_cr × 100; not an official PAIMANA financial-progress field.,Derived
+expenditure_progress_gap_pct,Derived financial progress minus physical progress.,Derived
+cost_variance_pct,Derived revision relative to original cost.,Derived
+schedule_revision_days,Derived difference between revised and original completion dates.,Derived
+schedule_revision_months,Derived schedule revision in months using 30.44 days/month.,Derived
+schedule_slippage_days_to_snapshot,"Days past original completion date at the snapshot date, floored at zero.",Derived
+planned_duration_months,Derived planned duration from start to original completion.,Derived
+elapsed_months_at_snapshot,Derived elapsed time from start to snapshot date.,Derived
+progress_velocity_pct_per_month,Month-on-month change in physical progress.,Derived
+progress_velocity_3m_avg,Rolling average of progress velocity over available monthly snapshots.,Derived
+months_since_previous_snapshot,Months since the project's previous available snapshot.,Derived
+months_since_last_progress_update,Derived proxy from snapshot cadence; not an official PAIMANA field.,Derived
+sector_prior_cost_revision_rate,Cost-revision rate among earlier snapshots in the same sector only; temporal prior.,Derived
+sector_prior_schedule_revision_rate,Schedule-revision rate among earlier snapshots in the same sector only; temporal prior.,Derived
+progress_stagnation_flag,Prompt rule: progress change <1.5 percentage points across the last 3 consecutive monthly snapshots.,Derived rule
+cost_overrun_flag,Retrospective label: revised cost > original cost when revised cost is available.,Derived label
+schedule_overrun_flag,Retrospective label: revised completion date > original completion date when both are available.,Derived label
