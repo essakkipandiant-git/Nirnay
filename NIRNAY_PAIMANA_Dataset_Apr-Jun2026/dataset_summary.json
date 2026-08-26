@@ -1,0 +1,24 @@
+{
+  "source_reports": [
+    "April 2026",
+    "May 2026",
+    "June 2026"
+  ],
+  "ongoing_rows": 5815,
+  "unique_project_codes_across_reports": 2038,
+  "rows_by_month": {
+    "2026-04": 1981,
+    "2026-05": 1987,
+    "2026-06": 1847
+  },
+  "ministries": 16,
+  "sectors": 12,
+  "notes": [
+    "Only PAIMANA Table 6 All Ongoing Projects data was used for the core dataset.",
+    "Ministry and sector are inherited from the grouped headings in Table 6.",
+    "No missing values were invented.",
+    "The ML target flags are retrospective revision labels, not leakage-free future-event labels.",
+    "A longer monthly history is required for a strong forecasting experiment and for 4-quarter cost-acceleration rules.",
+    "Milestone-level fields are not present in these supplied Table 6 PDFs and were not fabricated."
+  ]
+}
