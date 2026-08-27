@@ -1,5 +1,4 @@
-import Papa from 'papaparse';
-import { Project, projects as demoProjects, RiskLevel } from './demo-data';
+import type { Project, RiskLevel } from './demo-data';
 
 export interface MLPrediction {
   project_id: string;
@@ -13,154 +12,186 @@ export interface MLPrediction {
   top_risk_driver_1: string;
   top_risk_driver_2: string;
   top_risk_driver_3: string;
+  explanation?: any;
 }
 
-// ---------------------------------------------------------
-// PREDICTION ADAPTER PATTERN
-// ---------------------------------------------------------
+// In-memory cache for the combined dataset
+let _cachedProjects: Project[] | null = null;
+let _cachedPredictions: MLPrediction[] | null = null;
+let _cachedHistory: any = null;
 
-export interface PredictionAdapter {
-  getMLPredictions(): Promise<MLPrediction[]>;
+// Normalizer just in case, though combined data should be clean
+function normalizeId(id: string | number) {
+  return String(id).replace(/[^0-9A-Z-]/gi, '').replace(/^0+/, '');
 }
 
-export class CSVPredictionProvider implements PredictionAdapter {
-  async getMLPredictions(): Promise<MLPrediction[]> {
-    // DO NOT read from local filesystem in browser. Fetch from public static path.
-    const response = await fetch('/nirnay_ml_predictions.csv');
-    if (!response.ok) {
-      console.warn('Failed to fetch ML predictions CSV. Returning empty.');
-      return [];
+async function loadData() {
+  if (!_cachedProjects) {
+    const res = await fetch('/nirnay_combined_data.json');
+    if (res.ok) {
+      const data = await res.json();
+      _cachedProjects = data.map((d: any) => ({
+        id: String(d.id),
+        name: d.name || `Project ${d.id}`,
+        ministry: d.ministry || 'Unknown',
+        sector: d.sector || 'Unknown',
+        state: d.state || 'Unknown',
+        originalCost: d.originalCost || 0,
+        revisedCost: d.revisedCost || 0,
+        expenditure: d.expenditure || 0,
+        physicalProgress: d.physicalProgress || 0,
+        financialProgress: d.financialProgress || 0,
+        riskScore: d.riskScore || 0,
+        costRisk: d.costRiskIndicator || 0,
+        delayRisk: Math.round((d.probabilityDelayed || 0) * 100),
+        riskLevel: (d.predictedRiskLevel || 'Low') as RiskLevel,
+        status: d.status || 'Under Implementation',
+        lifecycle: (d.physicalProgress === 100 || String(d.status).toLowerCase() === 'completed') ? (d.timeOverrunMonths > 0 ? 'Completed - Delayed' : 'Completed on Schedule') : 'Active / Ongoing',
+        timeOverrunMonths: d.timeOverrunMonths || 0,
+        primaryDriver: d.primaryDriver || 'Multiple factors',
+        plannedCompletion: d.originalCompletion || 'N/A',
+        expectedCompletion: d.anticipatedCompletion || 'N/A',
+        implementingAgency: d.agency || 'N/A',
+        riskHistory: [] // Will be populated dynamically if needed
+      }));
+      
+      _cachedPredictions = data.map((d: any) => ({
+        project_id: String(d.id),
+        risk_level_ml: (d.predictedRiskLevel || 'Low') as RiskLevel,
+        probability_delayed_6m: d.probabilityDelayed || 0,
+        risk_confidence: d.probabilityDelayed || 0,
+        probability_critical: d.probabilityCritical || 0,
+        probability_high: d.probabilityHigh || 0,
+        probability_medium: d.probabilityMedium || 0,
+        probability_low: d.probabilityLow || 0,
+        top_risk_driver_1: d.topDriver1 || d.primaryDriver || '',
+        top_risk_driver_2: d.topDriver2 || '',
+        top_risk_driver_3: d.topDriver3 || '',
+        explanation: d.explanation
+      }));
+    } else {
+      _cachedProjects = [];
+      _cachedPredictions = [];
     }
-    const csvText = await response.text();
-    const parsed = Papa.parse<MLPrediction>(csvText, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-    });
-    return parsed.data;
   }
 }
-
-// Active provider instance (can be swapped for APIPredictionProvider later)
-const activeProvider: PredictionAdapter = new CSVPredictionProvider();
-
-// In-memory cache
-let _predictionsCache: MLPrediction[] | null = null;
-
-// ---------------------------------------------------------
-// EXPOSED SERVICE FUNCTIONS
-// ---------------------------------------------------------
 
 export async function getMLPredictions(): Promise<MLPrediction[]> {
-  if (!_predictionsCache) {
-    _predictionsCache = await activeProvider.getMLPredictions();
-  }
-  return _predictionsCache;
+  await loadData();
+  return _cachedPredictions || [];
 }
 
-/**
- * Clean up IDs to handle mismatches (e.g. NIR-2026-001 vs 2026001 or 14)
- */
-function normalizeId(id: string | number) {
-  return String(id).replace(/[^0-9]/g, '').replace(/^0+/, '');
+export async function getEnrichedProjects(): Promise<Project[]> {
+  await loadData();
+  
+  console.log(`DATA LOAD DEBUG
+----------------`);
+  console.log(`Project records loaded: ${_cachedProjects?.length || 0}`);
+  console.log(`Prediction records loaded: ${_cachedPredictions?.length || 0}`);
+  console.log(`Historical records loaded: ${Object.keys(_cachedHistory || {}).length}`);
+  console.log(`Successful project/prediction joins: ${_cachedProjects?.filter(p => _cachedPredictions?.some(pr => pr.project_id === p.id)).length || 0}`);
+  console.log(`Projects with missing prediction: ${_cachedProjects?.filter(p => !_cachedPredictions?.some(pr => pr.project_id === p.id)).length || 0}`);
+  console.log(`Valid risk scores: ${_cachedProjects?.filter(p => p.riskScore > 0).length || 0}`);
+  console.log(`Valid delay probabilities: ${_cachedProjects?.filter(p => p.delayRisk > 0).length || 0}`);
+  console.log(`Critical: ${_cachedProjects?.filter(p => p.riskLevel === 'Critical').length || 0}`);
+  console.log(`High: ${_cachedProjects?.filter(p => p.riskLevel === 'High').length || 0}`);
+  console.log(`Medium: ${_cachedProjects?.filter(p => p.riskLevel === 'Medium').length || 0}`);
+  console.log(`Low: ${_cachedProjects?.filter(p => p.riskLevel === 'Low').length || 0}`);
+  console.log(`Early warnings: ${_cachedProjects?.filter(p => p.riskLevel === 'Critical' && p.delayRisk > 75).length || 0}`);
+  return _cachedProjects || [];
+}
+
+export async function getEnrichedProjectById(id: string): Promise<Project | undefined> {
+  const all = await getEnrichedProjects();
+  return all.find(p => p.id === String(id) || normalizeId(p.id) === normalizeId(id));
 }
 
 export async function getMLPredictionByProjectId(projectId: string): Promise<MLPrediction | undefined> {
   const preds = await getMLPredictions();
-  const normalizedTarget = normalizeId(projectId);
-  return preds.find((p) => {
-    // If exact match (in case ids match exactly)
-    if (String(p.project_id) === projectId) return true;
-    // Fallback fuzzy match for demo data IDs like "NIR-2026-014" vs "14"
-    if (normalizeId(p.project_id) === normalizedTarget) return true;
-    return false;
-  });
+  return preds.find(p => p.project_id === String(projectId) || normalizeId(p.project_id) === normalizeId(projectId));
 }
 
 export async function getRiskStatistics() {
-  const preds = await getMLPredictions();
+  const projects = await getEnrichedProjects();
   const counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
-  
-  for (const p of preds) {
-    if (counts[p.risk_level_ml] !== undefined) {
-      counts[p.risk_level_ml]++;
+  for (const p of projects) {
+    if (counts[p.riskLevel] !== undefined) {
+      counts[p.riskLevel]++;
     }
   }
   return counts;
 }
 
-// ---------------------------------------------------------
-// FRONTEND INTEGRATION HELPERS
-// ---------------------------------------------------------
-
-/**
- * Deterministic Risk Score calculation from probabilities (0-100 scale)
- */
-export function computeRiskScore(prediction: MLPrediction | undefined): number {
-  if (!prediction) return 0;
-  return Math.round(prediction.probability_delayed_6m * 100);
-}
-
-/**
- * Transforms demo projects by injecting REAL ML predictions
- */
-export async function getEnrichedProjects(): Promise<Project[]> {
-  const predictions = await getMLPredictions();
-  
-  // Clone demo projects
-  const enriched: Project[] = JSON.parse(JSON.stringify(demoProjects));
-
-  for (const project of enriched) {
-    const mlPred = predictions.find(p => 
-      String(p.project_id) === project.id || 
-      normalizeId(p.project_id) === normalizeId(project.id)
-    );
-
-    if (mlPred) {
-      // OVERWRITE demo values with ML predictions
-      project.riskLevel = mlPred.risk_level_ml;
-      project.riskScore = computeRiskScore(mlPred);
-      project.delayRisk = Math.round(mlPred.probability_delayed_6m * 100);
-      project.primaryDriver = mlPred.top_risk_driver_1 || 'Unspecified';
-      
-      // We leave costRisk intact as instructed: it represents current exposure, not ML probability.
-    } else {
-      // MISSING PREDICTION HANDLING
-      project.riskLevel = 'Prediction unavailable' as any;
-      project.riskScore = 0;
-      project.delayRisk = 0;
-      project.primaryDriver = 'Prediction unavailable';
-    }
-  }
-  
-  return enriched;
-}
-
-export async function getEnrichedProjectById(id: string): Promise<Project> {
-  const all = await getEnrichedProjects();
-  return all.find(p => p.id === id) || all[0];
-}
-
-/**
- * Generate Early Warnings derived dynamically from ML Predictions
- */
 export async function getMLWarnings() {
+  const projects = await getEnrichedProjects();
   const preds = await getMLPredictions();
-  const criticals = preds.filter(p => p.risk_level_ml === 'Critical').slice(0, 5);
   
-  // Generate warnings based on top risk drivers
+  // Find critical projects with high delay risk
+  const criticals = projects.filter(p => p.riskLevel === 'Critical' && p.delayRisk > 75).slice(0, 8);
+  
   return criticals.map(p => {
-    // Find matching demo project for names (in real app, we'd have the name)
-    const demoMatch = demoProjects.find(dp => normalizeId(dp.id) === normalizeId(p.project_id));
-    const name = demoMatch ? demoMatch.name : `Project ${p.project_id}`;
-    const id = demoMatch ? demoMatch.id : String(p.project_id);
-    
+    const pred = preds.find(pr => pr.project_id === p.id);
     return {
-      title: `${p.top_risk_driver_1 || 'Critical Risk'} detected`,
-      project: name,
-      detail: `Model has flagged a ${Math.round(p.probability_delayed_6m * 100)}% probability of schedule delay driven by ${p.top_risk_driver_1?.toLowerCase() || 'multiple factors'}.`,
-      metric: `Probability: ${Math.round(p.probability_delayed_6m * 100)}% | Conf: ${Math.round(p.risk_confidence * 100)}%`,
-      id: id,
+      title: `${p.primaryDriver} detected`,
+      project: p.name,
+      detail: `Model flags a ${p.delayRisk}% probability of schedule delay driven by ${p.primaryDriver.toLowerCase()}.`,
+      metric: `Probability: ${p.delayRisk}%`,
+      id: p.id,
+      severity: p.riskLevel
     };
   });
+}
+
+export async function getProjectHistoryData(id: string) {
+  if (!_cachedHistory) {
+    const res = await fetch('/nirnay_project_history.json');
+    if (res.ok) _cachedHistory = await res.json();
+    else _cachedHistory = {};
+  }
+  return _cachedHistory[normalizeId(id)] || [];
+}
+
+export async function getPortfolioHistoryData() {
+  if (!_cachedHistory) {
+    const res = await fetch('/nirnay_project_history.json');
+    if (res.ok) _cachedHistory = await res.json();
+    else _cachedHistory = {};
+  }
+  return _cachedHistory;
+}
+
+
+export function filterProjects(projects: Project[], query: string, ministry: string, sector: string, risk: string, status: string = 'All Statuses'): Project[] {
+  const normalize = (v: any) => String(v || '').trim().toLowerCase();
+  const nq = normalize(query);
+  const nm = normalize(ministry);
+  const ns = normalize(sector);
+  const nr = normalize(risk);
+  const nst = normalize(status);
+  
+  return projects.filter(p => {
+    const pq = normalize(p.name) + ' ' + normalize(p.id);
+    const pm = normalize(p.ministry);
+    const ps = normalize(p.sector);
+    const pr = normalize(p.riskLevel);
+    const pst = normalize(p.lifecycle || p.status);
+    
+    const matchQ = !nq || pq.includes(nq);
+    const matchM = nm === 'all ministries' || nm === 'all' || pm === nm;
+    const matchS = ns === 'all sectors' || ns === 'all' || ps === ns;
+    const matchR = nr === 'all risk levels' || nr === 'all' || pr === nr;
+    const matchSt = nst === 'all statuses' || nst === 'all' || pst === nst;
+    
+    return matchQ && matchM && matchS && matchR && matchSt;
+  });
+}
+
+export function getUniqueMinistries(projects: Project[]): string[] {
+  return Array.from(new Set(projects.map(p => p.ministry).filter(Boolean))).sort();
+}
+export function getUniqueSectors(projects: Project[]): string[] {
+  return Array.from(new Set(projects.map(p => p.sector).filter(Boolean))).sort();
+}
+export function getUniqueStatuses(projects: Project[]): string[] {
+  return Array.from(new Set(projects.map(p => p.lifecycle).filter(Boolean))).sort();
 }

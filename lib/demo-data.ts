@@ -6,7 +6,7 @@ export interface Project {
   physicalProgress: number; financialProgress: number; riskScore: number
   costRisk: number; delayRisk: number; riskLevel: RiskLevel; status: string
   primaryDriver: string; plannedCompletion: string; expectedCompletion: string
-  implementingAgency: string; riskHistory: RiskPoint[]
+  implementingAgency: string; riskHistory: RiskPoint[]; lifecycle?: string; timeOverrunMonths?: number;
 }
 
 export const projects: Project[] = [

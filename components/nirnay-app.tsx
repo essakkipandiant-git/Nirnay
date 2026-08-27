@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Bell, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Download, Filter, LayoutDashboard, Menu, Moon, Search, Settings, ShieldCheck, SlidersHorizontal, Sparkles, Sun, Table2, X, Zap } from 'lucide-react'
 import { formatCr, ministries, sectors, type Project, type RiskLevel } from '@/lib/demo-data'
-import { getEnrichedProjects, getRiskStatistics, getMLWarnings, getMLPredictionByProjectId } from '@/lib/ml-predictions'
+import { getEnrichedProjects, getRiskStatistics, getMLWarnings, getMLPredictionByProjectId, getProjectHistoryData, getPortfolioHistoryData, filterProjects, getUniqueMinistries, getUniqueSectors, getUniqueStatuses } from '@/lib/ml-predictions'
 
 const navGroups = [
   { label:'OVERVIEW', collapsible:false, items:[['Dashboard','/dashboard','dashboard',LayoutDashboard,'active'],['Model & Data','/model-performance','model-data',Table2,'active']] },
@@ -27,10 +27,26 @@ function Bar({ value, color='blue' }:{value:number;color?:string}) { return <div
 function ExportButton({ rows=[] }:{rows?:Project[]}) { const exportCsv=()=>{ const csv=['Project,Ministry,Sector,Risk,Status',...rows.map(p=>[p.name,p.ministry,p.sector,p.riskScore,p.status].map(v=>`"${v}"`).join(','))].join('\n'); const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='nirnay-projects.csv';a.click() }; return <button className="button secondary" onClick={exportCsv}><Download size={15}/> Export</button> }
 function Sidebar({open,onClose}:{open:boolean;onClose:()=>void}) { const path=usePathname(); const [comingSoon,setComingSoon]=useState(false); const [expanded,setExpanded]=useState<Record<string,boolean>>({}); const showComingSoon=()=>{setComingSoon(true);window.setTimeout(()=>setComingSoon(false),2200)}; const toggleGroup=(label:string)=>setExpanded(current=>({...current,[label]:!current[label]})); return <><div className={`sidebar-overlay ${open?'show':''}`} onClick={onClose}/><aside className={`sidebar ${open?'open':'closed'}`} aria-label="Primary navigation"><div className="brand"><div className="brand-mark">N</div><div><strong>NIRNAY</strong><small>National Infrastructure Risk<br/> & Nodal Action Intelligence</small></div><button className="icon-button sidebar-close" onClick={onClose} aria-label="Close navigation"><X size={18}/></button></div><nav>{navGroups.map(group=>{const groupHasActive=group.items.some((item)=>{const [,href,key,,status]=item;return status==='active'&&(key==='dashboard'?path==='/':path?.startsWith((href as string).split('?')[0]))});const isExpanded=group.collapsible?(expanded[group.label]??groupHasActive):true;return <div className={`nav-group ${isExpanded?'nav-group-expanded':''}`} key={`${group.label}-${group.items[0][2]}`}><button className={`nav-label ${group.collapsible?'nav-label-collapsible':''}`} type="button" onClick={()=>group.collapsible&&toggleGroup(group.label)} aria-expanded={group.collapsible?isExpanded:undefined} disabled={!group.collapsible}><span>{group.label}</span>{group.collapsible&&<ChevronDown className="nav-chevron" size={14}/>}</button><div className="nav-group-items" aria-hidden={group.collapsible&&!isExpanded}>{isExpanded&&group.items.map((item)=>{const [label,href,key,IconComp,status]=item;const Icon = IconComp as React.ElementType; const enabled=status==='active'||key==='dashboard';const active=enabled&&(key==='dashboard'?path==='/':path?.startsWith((href as string).split('?')[0]));return enabled?<Link className={`nav-item ${active?'active':''}`} href={href as string} key={key as string} onClick={onClose}><Icon size={17}/><span>{label as string}</span></Link>:<button className="nav-item nav-item-disabled" type="button" key={key as string} onClick={showComingSoon} aria-label={`${label}, Coming Soon`}><Icon size={17}/><span>{label as string}</span><small>Coming Soon</small></button>})}</div></div>})}</nav>{comingSoon&&<div className="coming-soon-notice" role="status">Coming Soon</div>}<div className="sidebar-foot"><div className="engine"><span className="status-dot"/>Risk Engine v1.0</div><small>ML Predictions loaded via Provider</small></div></aside></> }
 function Header({onMenu,onToggleTheme,dark}:{onMenu:()=>void;onToggleTheme:()=>void;dark:boolean}) { const [notify,setNotify]=useState(false);return <header className="topbar"><button className="icon-button menu-toggle" onClick={onMenu} aria-label="Open navigation"><Menu size={20}/></button><div className="top-title">NIRNAY <span>/ Infrastructure Monitoring</span></div><div className="top-actions"><span className="updated">Last updated: 31 July 2026, 18:00 IST</span><button className="icon-button" onClick={()=>setNotify(!notify)} aria-label="Notifications"><Bell size={18}/><i className="notification-dot"/></button><button className="icon-button" onClick={onToggleTheme} aria-label={dark?'Switch to light mode':'Switch to dark mode'} title={dark?'Light mode':'Dark mode'}>{dark?<Sun size={18}/>:<Moon size={18}/>}</button><button className="icon-button" aria-label="Help"><CircleHelp size={18}/></button><button className="profile" aria-label="Open user menu"><span>AK</span><div><b>Admin User</b><small>Central Monitoring Unit</small></div><ChevronDown size={15}/></button></div>{notify&&<div className="notification-pop"><b>Notifications</b><p>3 projects require review</p><p>Dataset refreshed successfully</p></div>}</header> }
-function Notice(){return <div className="demo-notice"><span>Demonstration Dataset</span><p>The information displayed in this prototype combines synthetic demonstration records with actual model-based risk predictions.</p></div>}
-function Disclaimer(){return <div className="disclaimer-note" style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'12px',borderTop:'1px solid var(--border)',paddingTop:'8px'}}>Predictive outputs are intended to support, not replace, administrative judgement.</div>}
-function FilterBar({onFilter, rows}:{onFilter:(m:string,s:string,r:string)=>void, rows:Project[]}) {const [m,setM]=useState('All Ministries'),[s,setS]=useState('All Sectors'),[r,setR]=useState('All Risk Levels');const change=(a:string,b:string,c:string)=>{setM(a);setS(b);setR(c);onFilter(a,b,c)};return <div className="filterbar"><div className="filter-label"><Filter size={15}/> Filters</div><select value={m} onChange={e=>change(e.target.value,s,r)} aria-label="Ministry"><option>{ministries[0]}</option>{ministries.slice(1).map(x=><option key={x}>{x}</option>)}</select><select value={s} onChange={e=>change(m,e.target.value,r)} aria-label="Sector"><option>{sectors[0]}</option>{sectors.slice(1).map(x=><option key={x}>{x}</option>)}</select><select value={r} onChange={e=>change(m,s,e.target.value)} aria-label="Risk level"><option>All Risk Levels</option>{(['Critical','High','Medium','Low'] as const).map(x=><option key={x}>{x}</option>)}</select><select aria-label="Project status"><option>All Statuses</option><option>Under Implementation</option></select><button className="button ghost" onClick={()=>change('All Ministries','All Sectors','All Risk Levels')}>Reset</button><ExportButton rows={rows}/></div> }
-function Kpis({rows, counts}:{rows:Project[], counts: Record<string, number>}){const critical=rows.filter(p=>p.riskLevel==='Critical').length,high=rows.filter(p=>p.riskLevel==='High').length;const exposure=formatCr(rows.reduce((a,p)=>a+p.revisedCost-p.originalCost,0));return <div className="kpi-grid">{[['Total Projects',rows.length||0,'Portfolio'],['Critical Risk',critical,'Requires immediate review'],['High Risk',high,'Priority monitoring'],['Cost Risk Exposure',exposure,'Model estimate'],['Schedule Risk','Dynamic','Portfolio estimate'],['Early Warnings',critical,'Active signals']].map(([label,value,meta],i)=><div className="kpi" key={label}><div className="kpi-top"><span>{label}</span><span className={`kpi-icon k${i}`} /></div><strong>{value}</strong><small>{meta}</small></div>)}</div>}
+function Notice(){return <div className="demo-notice"><span>Demonstration Platform</span><p>Using model-generated predictions from the NIRNAY training pipeline. Data is intended to support administrative review.</p></div>}
+function Disclaimer(){return <div className="disclaimer-note" style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'12px',borderTop:'1px solid var(--border)',paddingTop:'8px'}}>Predictions are intended to support administrative review and not replace official decision-making.</div>}
+function FilterBar({onFilter, allRows, rows}:{onFilter:(m:string,s:string,r:string,st:string)=>void, allRows:Project[], rows:Project[]}) {
+  const [m,setM]=useState('All Ministries');
+  const [s,setS]=useState('All Sectors');
+  const [r,setR]=useState('All Risk Levels');
+  const [st,setSt]=useState('Active / Ongoing');
+  
+  const change=(a:string,b:string,c:string,d:string)=>{
+    setM(a);setS(b);setR(c);setSt(d);
+    onFilter(a,b,c,d);
+  };
+  
+  const mList = getUniqueMinistries(allRows);
+  const sList = getUniqueSectors(allRows);
+  const stList = getUniqueStatuses(allRows);
+  
+  return <div className="filterbar"><div className="filter-label"><Filter size={15}/> Filters</div><select value={m} onChange={e=>change(e.target.value,s,r,st)} aria-label="Ministry"><option>All Ministries</option>{mList.map(x=><option key={x}>{x}</option>)}</select><select value={s} onChange={e=>change(m,e.target.value,r,st)} aria-label="Sector"><option>All Sectors</option>{sList.map(x=><option key={x}>{x}</option>)}</select><select value={r} onChange={e=>change(m,s,e.target.value,st)} aria-label="Risk level"><option>All Risk Levels</option>{['Critical','High','Medium','Low'].map(x=><option key={x}>{x}</option>)}</select><select value={st} onChange={e=>change(m,s,r,e.target.value)} aria-label="Project status"><option>All Statuses</option>{stList.map(x=><option key={x}>{x}</option>)}</select><button className="button ghost" onClick={()=>change('All Ministries','All Sectors','All Risk Levels','Active / Ongoing')}>Reset</button><ExportButton rows={rows}/></div> 
+}
+function Kpis({rows, counts}:{rows:Project[], counts: Record<string, number>}){const critical=rows.filter(p=>p.riskLevel==='Critical').length,high=rows.filter(p=>p.riskLevel==='High').length,medium=rows.filter(p=>p.riskLevel==='Medium').length,low=rows.filter(p=>p.riskLevel==='Low').length;const exposure=formatCr(rows.reduce((a,p)=>a+Math.max(0,p.revisedCost-p.originalCost),0));const avgDelay = rows.length ? Math.round(rows.reduce((a,p)=>a+p.delayRisk,0)/rows.length) : 0;return <div className="kpi-grid">{[['Total Projects',rows.length||0,'Portfolio'],['Critical Risk',critical,'Requires immediate review'],['High Risk',high,'Priority monitoring'],['Avg Delay Risk',avgDelay+'%','Portfolio average'],['Cost Risk Exposure',exposure,'Model estimate'],['Early Warnings',critical,'Active signals']].map(([label,value,meta],i)=><div className="kpi" key={label}><div className="kpi-top"><span>{label}</span><span className={`kpi-icon k${i}`} /></div><strong>{value}</strong><small>{meta}</small></div>)}</div>}
 function ProjectTable({rows,title='Projects Requiring Attention'}:{rows:Project[];title?:string}){return <Card title={title} subtitle="Projects with the highest predicted implementation risk"><div className="table-wrap"><table><caption className="sr-only">{title}</caption><thead><tr><th>Project</th><th>Ministry</th><th>Sector</th><th>Risk</th><th>Cost Risk</th><th>Delay Risk</th><th>Primary Driver</th><th>Last Updated</th><th>Action</th></tr></thead><tbody>{rows.length?rows.map(p=><tr key={p.id}><td><Link className="project-link" href={`/projects/${p.id}`}>{p.name}</Link><small>{p.id}</small></td><td>{p.ministry}</td><td>{p.sector}</td><td><RiskBadge level={p.riskLevel} score={p.riskScore}/></td><td>{p.costRisk}%</td><td>{p.delayRisk}%</td><td>{p.primaryDriver}</td><td>31 Jul 2026</td><td><Link className="view-link" href={`/projects/${p.id}`}>View <ChevronRight size={14}/></Link></td></tr>):<tr><td colSpan={9}><div className="empty">No projects found<br/><button className="text-button">Clear filters</button></div></td></tr>}</tbody></table></div></Card>}
 function Distribution({counts}:{counts: Record<string, number>}){const total=Object.values(counts).reduce((a,b)=>a+b,0);return <Card title="Project Risk Distribution" subtitle="ML Predicted portfolio risk classification"><div className="distribution"><div className="distribution-bar">{Object.entries(counts).map(([key,val])=><div key={key} className={`segment ${riskClass(key as RiskLevel)}`} style={{width:`${total===0?0:val/total*100}%`}} title={`${key}: ${val}`}/>)}</div>{Object.entries(counts).map(([key,val])=><div className="legend-row" key={key}><span className={`legend-dot ${riskClass(key as RiskLevel)}`}/><b>{key}</b><span>{val.toLocaleString('en-IN')}</span><small>{total===0?0:Math.round(val/total*100)}%</small></div>)}</div></Card>}
 function Trend(){const [range,setRange]=useState(12);const values=range===6?[48,51,54,58,62,66]:range===24?[41,43,46,49,52,55,58,61,64,67,70,73]:[44,46,48,51,54,57,59,61,64,66,69,72];const points=values.map((v,i)=>`${i*(100/(values.length-1))},${100-v}`).join(' ');return <Card title="Portfolio Risk Trend" subtitle="Average predicted risk score across reporting periods"><div className="range-tabs">{[6,12,24].map(n=><button className={range===n?'selected':''} onClick={()=>setRange(n)} key={n}>{n} Months</button>)}</div><div className="trend-chart"><div className="y-labels"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div><svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Portfolio risk trend rising over selected months"><line x1="0" y1="25" x2="100" y2="25"/><line x1="0" y1="50" x2="100" y2="50"/><line x1="0" y1="75" x2="100" y2="75"/><polyline points={points}/>{values.map((v,i)=><circle key={i} cx={i*(100/(values.length-1))} cy={100-v} r="1.4"/>)}</svg></div><div className="x-labels"><span>Jan</span><span>Mar</span><span>May</span><span>Jul</span></div></Card>}
@@ -40,43 +56,84 @@ function Landing({dark,onToggleTheme}:{dark:boolean;onToggleTheme:()=>void}){ret
 function Dashboard(){
   const [allRows, setAllRows] = useState<Project[]>([]);
   const [rows,setRows]=useState<Project[]>([]);
-  const [counts, setCounts] = useState({ Critical: 0, High: 0, Medium: 0, Low: 0 });
-  const [warnings, setWarnings] = useState<any[]>([]);
+  const [debugMsg, setDebugMsg] = useState('');
 
   useEffect(() => {
     getEnrichedProjects().then(r => { setAllRows(r); setRows(r); });
-    getRiskStatistics().then(setCounts);
-    getMLWarnings().then(setWarnings);
   }, []);
 
-  return <><HomeHero/><PageHeader title="Infrastructure Project Monitoring" subtitle="Predictive monitoring and early intervention across the infrastructure portfolio"/><Notice/><FilterBar rows={rows} onFilter={(m,s,r)=>setRows(allRows.filter(p=>(m==='All Ministries'||p.ministry===m)&&(s==='All Sectors'||p.sector===s)&&(r==='All Risk Levels'||p.riskLevel===r)))}/><Kpis rows={rows} counts={counts}/><ProjectTable rows={rows.slice().sort((a,b)=>b.riskScore-a.riskScore).slice(0,5)}/><div className="two-col"><Distribution counts={counts}/><Trend/></div><Card title="Early Warning Signals" subtitle="ML signals requiring administrative review"><div className="warnings">{warnings.map(w=><div className="warning-row" key={w.id}><div className="warning-icon"><Zap size={17}/></div><div><b>{w.title}</b><strong>{w.project}</strong><p>{w.detail}</p><small>{w.metric}</small></div><Link href={`/projects/${w.id}`} className="button secondary">View Project</Link></div>)}</div></Card></>
+  const counts = {
+    Critical: rows.filter(p => p.riskLevel === 'Critical').length,
+    High: rows.filter(p => p.riskLevel === 'High').length,
+    Medium: rows.filter(p => p.riskLevel === 'Medium').length,
+    Low: rows.filter(p => p.riskLevel === 'Low').length
+  };
+  
+  const warnings = rows.filter(p => p.riskLevel === 'Critical' && p.delayRisk > 75).slice(0, 8).map(p => ({
+    title: `${p.primaryDriver} detected`,
+    project: p.name,
+    detail: `Model flags a ${p.delayRisk}% probability of schedule delay driven by ${p.primaryDriver.toLowerCase()}.`,
+    metric: `Probability: ${p.delayRisk}%`,
+    id: p.id,
+    severity: p.riskLevel
+  }));
+
+  const handleFilter = (m:string,s:string,r:string,st:string) => {
+    const filtered = filterProjects(allRows, '', m, s, r, st);
+    setRows(filtered);
+    setDebugMsg(`Selected Ministry: ${m}\nSelected Sector: ${s}\nSelected Risk: ${r}\nSelected Status: ${st}\nProjects before filter: ${allRows.length}\nProjects after filter: ${filtered.length}`);
+    console.log(`DATA LOAD DEBUG\n----------------\nSelected Ministry: ${m}\nSelected Sector: ${s}\nSelected Risk: ${r}\nSelected Status: ${st}\nProjects before filter: ${allRows.length}\nProjects after filter: ${filtered.length}`);
+  };
+
+  return <><HomeHero/><PageHeader title="Infrastructure Project Monitoring" subtitle="Predictive monitoring and early intervention across the infrastructure portfolio"/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/>{debugMsg && <pre style={{fontSize:'11px', background:'#eee', padding:'10px', color:'#000'}}>{debugMsg}</pre>}<Kpis rows={rows} counts={counts}/><ProjectTable rows={rows.slice().sort((a,b)=>b.riskScore-a.riskScore).slice(0,5)}/><div className="two-col"><Distribution counts={counts}/><Trend/></div><Card title="Early Warning Signals" subtitle="ML signals requiring administrative review"><div className="warnings">{warnings.length?warnings.map(w=><div className="warning-row" key={w.id}><div className="warning-icon"><Zap size={17}/></div><div><b>{w.title}</b><strong>{w.project}</strong><p>{w.detail}</p><small>{w.metric}</small></div><Link href={`/projects/${w.id}`} className="button secondary">View Project</Link></div>):<div className="empty">No warnings for current selection</div>}</div></Card></>
 }
 
 function ProjectsPage(){
   const [query,setQuery]=useState('');
-  const [risk,setRisk]=useState('All');
+  const [risk,setRisk]=useState('All Risk Levels');
   const [allRows, setAllRows] = useState<Project[]>([]);
   useEffect(() => { getEnrichedProjects().then(setAllRows); }, []);
 
-  const rows=allRows.filter(p=>p.name.toLowerCase().includes(query.toLowerCase())&&(risk==='All'||p.riskLevel===risk));
-  return <><PageHeader title="All Projects" subtitle="Explore and review the national infrastructure project portfolio"/><Notice/><div className="explorer-tools"><div className="searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search projects..." aria-label="Search projects"/></div><select value={risk} onChange={e=>setRisk(e.target.value)} aria-label="Risk filter"><option>All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><button className="button secondary"><Filter size={15}/> More filters</button><ExportButton rows={rows}/></div><Card title="Project Portfolio" subtitle={`${rows.length} records in current view`}><div className="table-wrap"><table><thead><tr><th>Project</th><th>Ministry</th><th>Sector</th><th>Original Cost</th><th>Expenditure</th><th>Physical Progress</th><th>Risk</th><th>Status</th></tr></thead><tbody>{rows.map(p=><tr key={p.id}><td><Link className="project-link" href={`/projects/${p.id}`}>{p.name}</Link><small>{p.id}</small></td><td>{p.ministry}</td><td>{p.sector}</td><td>{formatCr(p.originalCost)}</td><td>{formatCr(p.expenditure)}</td><td>{p.physicalProgress}%</td><td><RiskBadge level={p.riskLevel} score={p.riskScore}/></td><td><span className="status-badge">{p.status}</span></td></tr>)}</tbody></table></div></Card></>
+  const rows = filterProjects(allRows, query, 'All Ministries', 'All Sectors', risk, 'Active / Ongoing');
+  
+  return <><PageHeader title="All Projects" subtitle="Explore and review the national infrastructure project portfolio"/><Notice/><div className="explorer-tools"><div className="searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search projects..." aria-label="Search projects"/></div><select value={risk} onChange={e=>setRisk(e.target.value)} aria-label="Risk filter"><option>All Risk Levels</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><button className="button secondary"><Filter size={15}/> More filters</button><ExportButton rows={rows}/></div><Card title="Project Portfolio" subtitle={`${rows.length} records in current view`}><div className="table-wrap"><table><thead><tr><th>Project</th><th>Ministry</th><th>Sector</th><th>Original Cost</th><th>Expenditure</th><th>Physical Progress</th><th>Risk</th><th>Status</th></tr></thead><tbody>{rows.length?rows.map(p=><tr key={p.id}><td><Link className="project-link" href={`/projects/${p.id}`}>{p.name}</Link><small>{p.id}</small></td><td>{p.ministry}</td><td>{p.sector}</td><td>{formatCr(p.originalCost)}</td><td>{formatCr(p.expenditure)}</td><td>{p.physicalProgress==null?'N/A':`${Number(p.physicalProgress).toFixed(1)}%`}</td><td>{p.lifecycle?.includes('Completed') ? '-' : <RiskBadge level={p.riskLevel} score={p.riskScore}/>}</td><td><span className="status-badge">{p.lifecycle||p.status}</span></td></tr>):<tr><td colSpan={8}><div className="empty">No projects found for current filter</div></td></tr>}</tbody></table></div></Card></>
 }
 
 function Detail({id}:{id:string}){
   const [p, setP] = useState<Project | null>(null);
   const [ml, setML] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [tab, setTab] = useState('Overview');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     getEnrichedProjects().then(projects => {
-      const match = projects.find(pr => pr.id === id) || projects[0];
-      setP(match);
+      const match = projects.find(pr => pr.id === String(id) || pr.id.replace(/^0+/,'') === String(id).replace(/^0+/,''));
+      setP(match || null);
+      setLoaded(true);
     });
     getMLPredictionByProjectId(id).then(setML);
+    getProjectHistoryData(id).then(setHistory);
   }, [id]);
 
-  if (!p) return <div>Loading...</div>;
+  if (!loaded) return <div style={{padding:'40px',textAlign:'center'}}>Loading...</div>;
+  if (!p) return <div className="empty" style={{marginTop:'100px'}}><h2>Project not found</h2><p>The requested project ID ({id}) does not exist in the dataset.</p></div>;
 
-  return <><PageHeader title={p.name} subtitle={`${p.id} · ${p.ministry} · ${p.sector} · ${p.state}`}/><div className="detail-hero"><div><span className="eyebrow">PROJECT RECORD</span><h2>{p.name}</h2><p>Implementing agency: {p.implementingAgency}</p></div><RiskBadge level={p.riskLevel} score={p.riskScore}/></div><div className="tabs"><button className="selected">Overview</button><button>Financial</button><button>Schedule</button><button>Milestones</button><button>Risk Analysis</button><button>Interventions</button><button>History</button></div><div className="detail-grid">{[['Approved cost',formatCr(p.originalCost)],['Revised cost',formatCr(p.revisedCost)],['Expenditure',formatCr(p.expenditure)],['Start date','Apr 2021'],['Planned completion',p.plannedCompletion],['Expected completion',p.expectedCompletion],['Physical progress',`${p.physicalProgress}%`],['Financial progress',`${p.financialProgress}%`],['Implementing agency',p.implementingAgency],['State / region',p.state],['Project status',p.status],['Assessment','Model-based estimate']].map(([l,v])=><div className="detail-item" key={l}><small>{l}</small><b>{v}</b></div>)}</div><div className="two-col detail-sections"><Card title="ML RISK ASSESSMENT" subtitle="Model-based predictive analysis">
+  const renderTabContent = () => {
+    if (tab === 'Risk Analysis') return <Card title="SHAP Feature Explanations" subtitle="Top risk drivers and their relative impact on the delay prediction">
+      {ml?.explanation ? <div className="table-wrap"><table><thead><tr><th>Feature</th><th>Impact</th></tr></thead><tbody>{Object.entries(ml.explanation).slice(0,10).map(([k,v]:any)=><tr key={k}><td>{k}</td><td><Bar value={Math.min(100, Math.abs(v)*20)} color={v>0?'red':'green'}/></td></tr>)}</tbody></table></div> : <div className="empty">No explanation available</div>}
+    </Card>;
+    if (tab === 'History') return <Card title="Historical Data" subtitle="Monthly records"><div className="table-wrap"><table><thead><tr><th>Month</th><th>Physical</th><th>Financial</th><th>Risk Score</th></tr></thead><tbody>{history.map((h:any,i)=><tr key={i}><td>{h.d}</td><td>{h.p}%</td><td>{h.financialProgress||0}%</td><td><RiskBadge level={h.r} score={h.s}/></td></tr>)}</tbody></table></div></Card>;
+    if (tab === 'Interventions') return <Card title="Recommended Interventions" subtitle="Rule-based recommendations"><div className="warnings"><div className="warning-row"><div className="warning-icon"><SlidersHorizontal size={17}/></div><div><b>Review Project Timeline</b><strong>{p.name}</strong><p>Delay risk is {p.delayRisk}%. Immediate review required based on primary driver: {p.primaryDriver}.</p><small>Priority: {p.riskLevel}</small></div></div></div></Card>;
+    return null;
+  }
+
+  const isCompleted = p.lifecycle === 'Completed - Delayed' || p.lifecycle === 'Completed on Schedule';
+  const physProg = p.physicalProgress == null ? 'Not available' : `${Number(p.physicalProgress).toFixed(1)}%`;
+  const finProg = p.financialProgress == null ? 'Not available' : `${Number(p.financialProgress).toFixed(1)}%`;
+  
+  return <><PageHeader title={p.name} subtitle={`${p.id} · ${p.ministry} · ${p.sector} · ${p.state}`}/><div className="detail-hero"><div><span className="eyebrow">{isCompleted ? 'COMPLETED PROJECT RECORD' : 'PROJECT RECORD'}</span><h2>{p.name}</h2><p>Implementing agency: {p.implementingAgency}</p></div>{isCompleted ? <span className="status-badge" style={{fontSize:'16px', padding:'10px'}}>{p.lifecycle}</span> : <RiskBadge level={p.riskLevel} score={p.riskScore}/>}</div><div className="tabs">{['Overview','Financial','Schedule','Milestones','Risk Analysis','Interventions','History'].map(t=><button key={t} className={tab===t?'selected':''} onClick={()=>setTab(t)}>{t}</button>)}</div><div className="detail-grid">{[['Approved cost',formatCr(p.originalCost)],['Revised cost',formatCr(p.revisedCost)],['Expenditure',formatCr(p.expenditure)],['Start date','Not available'],['Planned completion',p.plannedCompletion||'Not available'],['Expected completion',p.expectedCompletion||'Not available'],['Physical progress',physProg],['Financial progress',finProg],['Implementing agency',p.implementingAgency||'Not available'],['State / region',p.state||'Not available'],['Project status',p.lifecycle||p.status],['Assessment',isCompleted?'Historical Outcome':'Model-based estimate']].map(([l,v])=><div className="detail-item" key={l}><small>{l}</small><b>{v}</b></div>)}</div><div className="two-col detail-sections">
+  {isCompleted ? <Card title="POST-PROJECT OUTCOME" subtitle="Final completion metrics"><div className="risk-metrics"><div><b style={{fontSize:'1.8rem', color:'var(--text)'}}>{p.timeOverrunMonths||0}</b><span>Months Delayed</span></div><div><b>{formatCr(p.revisedCost-p.originalCost)}</b><span>Cost Overrun</span></div></div></Card> : <Card title="ML RISK ASSESSMENT" subtitle="Model-based predictive analysis">
     {(p.riskLevel as unknown as string) === 'Prediction unavailable' ? (
       <div className="empty">Prediction unavailable</div>
     ) : (
@@ -99,25 +156,60 @@ function Detail({id}:{id:string}){
         <Disclaimer/>
       </>
     )}
-  </Card><Card title="Risk Trajectory" subtitle="Monthly risk history"><div className="trajectory">{p.riskHistory.map(point=><div key={point.month}><span>{point.value}</span><div style={{height:`${point.value}%`}}/><small>{point.month}</small></div>)}</div><b className="consecutive">Risk has increased for 5 consecutive reporting periods.</b></Card></div></>
+  </Card>}<Card title="Risk Trajectory" subtitle="Monthly risk history">{history.length ? <><div className="trajectory">{history.slice(-12).map((point:any, i:number)=><div key={i}><span>{point.s}</span><div style={{height:`${point.s}%`, background: point.s > 75 ? '#ae5a5b' : '#5a88a7'}}/><small>{String(point.d).split('-')[1]}</small></div>)}</div></> : <div className="empty">Insufficient historical data</div>}</Card>{renderTabContent()}</div></>
 }
 
 function GenericPage({title,subtitle}:{title:string;subtitle:string}){
+  const [allRows, setAllRows] = useState<Project[]>([]);
   const [rows, setRows] = useState<Project[]>([]);
-  useEffect(() => { getEnrichedProjects().then(setRows); }, []);
-  return <><PageHeader title={title} subtitle={subtitle}/><Notice/><div className="analytics-grid">{['Portfolio overview','Risk distribution','Sector comparison','Recent reporting periods'].map((x)=><Card key={x} title={x} subtitle="Demonstration metrics"><div className="large-stat">—</div><p className="muted">Analytics engine connecting to prediction source...</p></Card>)}</div><ProjectTable title="Portfolio records" rows={rows}/></>
+  useEffect(() => { getEnrichedProjects().then(r => { setAllRows(r); setRows(r); }); }, []);
+  const handleFilter = (m:string,s:string,r:string,st:string) => setRows(filterProjects(allRows, '', m, s, r, st));
+  
+  if (title === 'Intervention Center') return <><PageHeader title={title} subtitle={subtitle}/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><Card title="Interventions" subtitle="Recommended Actions"><div className="table-wrap"><table><thead><tr><th>Project</th><th>Risk Driver</th><th>Recommended Action</th><th>Priority</th><th>Target Date</th></tr></thead><tbody>{rows.filter(x=>x.riskLevel==='Critical' || x.riskLevel==='High').slice(0,30).map(p=><tr key={p.id}><td><Link href={`/projects/${p.id}`} className="project-link">{p.name}</Link><small>{p.id}</small></td><td>{p.primaryDriver}</td><td>{p.primaryDriver.includes('progress')?'Progress escalation':p.primaryDriver.includes('cost')?'Financial review':'Schedule recovery review'}</td><td><RiskBadge level={p.riskLevel} score={p.riskScore}/></td><td><span className="status-badge">Next 30 days</span></td></tr>)}</tbody></table></div></Card></>;
+  
+  if (title === 'Model Performance') return <><PageHeader title={title} subtitle={subtitle}/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><Card title="Model Metrics" subtitle="HistGradientBoosting (scikit-learn)"><div className="table-wrap"><table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody><tr><td>Accuracy</td><td>94.79%</td></tr><tr><td>Precision</td><td>96.45%</td></tr><tr><td>Recall</td><td>95.07%</td></tr><tr><td>F1 Score</td><td>95.76%</td></tr><tr><td>ROC-AUC</td><td>0.979</td></tr></tbody></table></div></Card></>;
+  
+  // Default Analytics
+  const avgRisk = rows.length ? Math.round(rows.reduce((a,b)=>a+b.riskScore,0)/rows.length) : 0;
+  const avgDelay = rows.length ? Math.round(rows.reduce((a,b)=>a+b.delayRisk,0)/rows.length) : 0;
+  
+  // Sector analysis
+  const sectorGroups = rows.reduce((acc, p) => { if(!acc[p.sector]) acc[p.sector] = []; acc[p.sector].push(p); return acc; }, {} as any);
+  const sectorData = Object.keys(sectorGroups).map(k => ({sector: k, count: sectorGroups[k].length, risk: Math.round(sectorGroups[k].reduce((a:any,b:any)=>a+b.riskScore,0)/sectorGroups[k].length)})).sort((a,b)=>b.risk-a.risk).slice(0,10);
+
+  return <><PageHeader title={title} subtitle={subtitle}/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><div className="analytics-grid"><Card title="Total Projects" subtitle="Monitored portfolio"><div className="large-stat">{rows.length.toLocaleString()}</div><p className="muted">Across {Object.keys(sectorGroups).length} sectors</p></Card><Card title="Average Risk Score" subtitle="Portfolio baseline"><div className="large-stat">{avgRisk} / 100</div><p className="muted">Based on ML inference</p></Card><Card title="Average Delay Risk" subtitle="Schedule indicator"><div className="large-stat">{avgDelay}%</div><p className="muted">Probability &gt; 6 months</p></Card><Card title="Total Exposure" subtitle="Cost variance"><div className="large-stat">{formatCr(rows.reduce((a,b)=>a+Math.max(0,b.revisedCost-b.originalCost),0))}</div><p className="muted">Estimated variance</p></Card></div>
+  <Card title="Sector Analysis" subtitle="Highest risk infrastructure sectors"><div className="table-wrap"><table><thead><tr><th>Sector</th><th>Projects</th><th>Average Risk Score</th></tr></thead><tbody>{sectorData.map(s=><tr key={s.sector}><td>{s.sector}</td><td>{s.count}</td><td><RiskBadge level={s.risk>75?'Critical':s.risk>50?'High':s.risk>25?'Medium':'Low'} score={s.risk}/></td></tr>)}</tbody></table></div></Card></>
 }
 
 function Intelligence(){
   const [answer,setAnswer]=useState('');
   const [rows, setRows] = useState<Project[]>([]);
   useEffect(() => { getEnrichedProjects().then(setRows); }, []);
-  return <><PageHeader title="Project Intelligence" subtitle="Query project monitoring data using natural language."/><Notice/><Card title="Analytical query" subtitle="Select a question to review structured portfolio results"><div className="querybox"><Search size={18}/><input placeholder="Ask about projects, risks, delays or cost trends..." value={answer} onChange={e=>setAnswer(e.target.value)}/><button className="button primary" onClick={()=>setAnswer(answer||'Projects requiring immediate intervention')}>Analyze</button></div><div className="query-chips">{['Projects requiring immediate intervention','Projects with increasing risk','Highest schedule risk sectors','Why is this project high risk?','Projects with similar historical patterns'].map(q=><button key={q} onClick={()=>setAnswer(q)}>{q}</button>)}</div>{answer&&<div className="intelligence-answer"><span className="eyebrow">STRUCTURED ANALYTICAL RESPONSE</span><h3>Query executed against current prediction payload.</h3><p>Results are based on the latest available ML inferences.</p><ProjectTable title="Matching projects" rows={rows.slice(0,3)}/></div>}</Card></>
+  return <><PageHeader title="Project Intelligence" subtitle="Query project monitoring data using natural language."/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><Card title="Analytical query" subtitle="Select a question to review structured portfolio results"><div className="querybox"><Search size={18}/><input placeholder="Ask about projects, risks, delays or cost trends..." value={answer} onChange={e=>setAnswer(e.target.value)}/><button className="button primary" onClick={()=>setAnswer(answer||'Projects requiring immediate intervention')}>Analyze</button></div><div className="query-chips">{['Projects requiring immediate intervention','Projects with increasing risk','Highest schedule risk sectors','Why is this project high risk?','Projects with similar historical patterns'].map(q=><button key={q} onClick={()=>setAnswer(q)}>{q}</button>)}</div>{answer&&<div className="intelligence-answer"><span className="eyebrow">STRUCTURED ANALYTICAL RESPONSE</span><h3>Query executed against current prediction payload.</h3><p>Results are based on the latest available ML inferences.</p><ProjectTable title="Matching projects" rows={rows.filter(p => { const q = answer.toLowerCase(); if(q.includes('rail') && !p.ministry.toLowerCase().includes('rail')) return false; if((q.includes('high') || q.includes('increasing')) && p.riskLevel !== 'High') return false; if((q.includes('critical') || q.includes('intervention')) && p.riskLevel !== 'Critical') return false; return true; }).slice(0,5)}/></div>}</Card></>
 }
 
 function Simulation(){
-  const [progress,setProgress]=useState(64);
-  return <><PageHeader title="Project Scenario Analysis" subtitle="Test planning assumptions and review model-based outcomes."/><Notice/><div className="simulation-grid"><Card title="Scenario inputs" subtitle="Adjust assumptions for the prototype model"><label>Physical progress <b>{progress}%</b><input type="range" min="20" max="95" value={progress} onChange={e=>setProgress(+e.target.value)}/></label><label>Monthly expenditure <b>₹{Math.round(progress*1.2)} Cr</b><input type="range" min="20" max="100" defaultValue="54"/></label><label>Milestone completion <b>{Math.min(100,progress+8)}%</b><input type="range" min="20" max="100" defaultValue="62"/></label><label>Completion date <input type="date" defaultValue="2027-01-31"/></label><label>Resource availability <select defaultValue="Adequate"><option>Adequate</option><option>Constrained</option><option>Enhanced</option></select></label></Card><Card title="Scenario outcome" subtitle="Model-based estimate"><div className="outcome-grid"><div><span>Current Risk</span><b>—</b></div><div className="emphasis"><span>Scenario Risk</span><b>—</b></div><div><span>Current Delay</span><b>—</b></div><div className="emphasis"><span>Scenario Delay</span><b>—</b></div></div><div className="scenario-note">Simulation engine requires connection to backend prediction endpoint.</div></Card></div></>
+  const [rows, setRows] = useState<Project[]>([]);
+  const [pId, setPId] = useState<string>('');
+  const [progress,setProgress]=useState(0);
+  const [exp,setExp]=useState(0);
+  
+  useEffect(() => { 
+    getEnrichedProjects().then(r => { 
+      setRows(r);
+      const crit = r.find(x => x.riskLevel === 'Critical');
+      if (crit) { setPId(crit.id); setProgress(crit.physicalProgress); setExp(Math.round((crit.expenditure/Math.max(1,crit.revisedCost))*100)); }
+    }); 
+  }, []);
+
+  const p = rows.find(x => x.id === pId);
+  const riskChange = p ? Math.round((p.physicalProgress - progress) * 0.5 + (exp - (p.expenditure/Math.max(1,p.revisedCost)*100)) * -0.5) : 0;
+  const newDelay = p ? Math.max(0, Math.min(100, p.delayRisk + riskChange)) : 0;
+  const newRiskLvl = newDelay > 75 ? 'Critical' : newDelay > 50 ? 'High' : newDelay > 25 ? 'Medium' : 'Low';
+
+  return <><PageHeader title="Project Scenario Analysis" subtitle="Test planning assumptions and review model-based outcomes."/><Notice/>
+  {rows.length > 0 && <div style={{marginBottom:'20px'}}>Select Project: <select value={pId} onChange={e=>{setPId(e.target.value); const np=rows.find(x=>x.id===e.target.value); if(np){setProgress(np.physicalProgress); setExp(Math.round((np.expenditure/Math.max(1,np.revisedCost))*100));}}} style={{padding:'5px', marginLeft:'10px', width:'400px'}}>{rows.filter(x=>x.riskLevel==='Critical'||x.riskLevel==='High').slice(0,50).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>}
+  <div className="simulation-grid"><Card title="Scenario inputs" subtitle="Adjust assumptions for the prototype model"><label>Physical progress <b>{progress}%</b><input type="range" min="0" max="100" value={progress} onChange={e=>setProgress(+e.target.value)}/></label><label>Financial progress <b>{exp}%</b><input type="range" min="0" max="100" value={exp} onChange={e=>setExp(+e.target.value)}/></label><label>Milestone completion <b>{Math.min(100,progress+8)}%</b><input type="range" min="20" max="100" defaultValue={progress}/></label><label>Completion date <input type="date" defaultValue="2027-01-31"/></label></Card><Card title="Scenario outcome" subtitle="Estimated approximation (Not a fresh ML inference)"><div className="outcome-grid"><div><span>Current Risk</span><b style={{fontSize:'20px'}}>{p?.riskLevel || '-'}</b></div><div className="emphasis"><span>Scenario Risk</span><b style={{fontSize:'20px'}}>{newRiskLvl}</b></div><div><span>Current Delay</span><b style={{fontSize:'20px'}}>{p?.delayRisk || 0}%</b></div><div className="emphasis"><span>Scenario Delay</span><b style={{fontSize:'20px'}}>{newDelay}%</b></div></div><div className="scenario-note">Simulation calculates deterministic estimates based on current model thresholds. It does not replace the official ML inference pipeline.</div></Card></div></>
 }
 
 export default function NirnayApp(){

@@ -1,0 +1,88 @@
+{
+  "pipeline": "NIRNAY ML Training Pipeline",
+  "version": "1.0.0",
+  "training_date": "2026-08-26 18:34:34",
+  "selected_model": "HistGradientBoosting",
+  "threshold": 0.6,
+  "risk_thresholds": {
+    "low_upper": 0.25,
+    "medium_upper": 0.5,
+    "high_upper": 0.75
+  },
+  "validation_metrics": {
+    "accuracy": 0.9643109540636042,
+    "precision": 0.9769230769230769,
+    "recall": 0.9745803357314149,
+    "f1": 0.975750300120048,
+    "roc_auc": 0.9915754912848245,
+    "pr_auc": 0.997343012763521,
+    "delayed_recall": 0.9745803357314149,
+    "delayed_precision": 0.9769230769230769,
+    "false_negative_rate": 0.02541966426858513,
+    "false_positive_rate": 0.06442953020134229
+  },
+  "test_metrics": {
+    "accuracy": 0.9479488310542568,
+    "precision": 0.9645184648805214,
+    "recall": 0.9507494646680942,
+    "f1": 0.9575844716031632,
+    "roc_auc": 0.9792662944482085,
+    "pr_auc": 0.9903410058728881,
+    "delayed_recall": 0.9507494646680942,
+    "delayed_precision": 0.9645184648805214,
+    "false_negative_rate": 0.04925053533190578,
+    "false_positive_rate": 0.05658198614318707
+  },
+  "top_features": [
+    {
+      "feature": "remaining_vs_overrun",
+      "display_name": "Remaining time vs overrun",
+      "shap_importance": 1.7736143727762994
+    },
+    {
+      "feature": "time_overrun_months",
+      "display_name": "Time overrun",
+      "shap_importance": 1.2128891195601978
+    },
+    {
+      "feature": "months_remaining",
+      "display_name": "Months remaining",
+      "shap_importance": 0.48995825870048987
+    },
+    {
+      "feature": "state",
+      "display_name": "State",
+      "shap_importance": 0.44651810319524415
+    },
+    {
+      "feature": "prev_expenditure_ratio",
+      "display_name": "Previous expenditure ratio",
+      "shap_importance": 0.44642633306683555
+    },
+    {
+      "feature": "original_cost",
+      "display_name": "Original cost",
+      "shap_importance": 0.252949104414921
+    },
+    {
+      "feature": "anticipated_cost",
+      "display_name": "Anticipated cost",
+      "shap_importance": 0.2387761944818805
+    },
+    {
+      "feature": "sector",
+      "display_name": "Sector",
+      "shap_importance": 0.23324327826048974
+    },
+    {
+      "feature": "project_age_months",
+      "display_name": "Project age",
+      "shap_importance": 0.21888824539145704
+    },
+    {
+      "feature": "cost_variance_pct",
+      "display_name": "Cost variance",
+      "shap_importance": 0.2124987132310391
+    }
+  ]
+}

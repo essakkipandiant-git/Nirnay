@@ -1,0 +1,27 @@
+feature,shap_importance,display_name
+remaining_vs_overrun,1.7736143727762994,Remaining time vs overrun
+time_overrun_months,1.2128891195601978,Time overrun
+months_remaining,0.48995825870048987,Months remaining
+state,0.44651810319524415,State
+prev_expenditure_ratio,0.44642633306683555,Previous expenditure ratio
+original_cost,0.252949104414921,Original cost
+anticipated_cost,0.2387761944818805,Anticipated cost
+sector,0.23324327826048974,Sector
+project_age_months,0.21888824539145704,Project age
+cost_variance_pct,0.2124987132310391,Cost variance
+expenditure_ratio,0.20746393226889356,Expenditure ratio
+exp_3m_change,0.20652761595254426,3-month expenditure change
+expenditure,0.20461887598395403,Cumulative expenditure
+schedule_pressure,0.15763598264204717,Schedule pressure
+cost_overrun_pct,0.10521237084545922,Cost overrun
+cost_growth_ratio,0.06041046035018292,Cost escalation ratio
+has_revised_cost,0.008841801667978546,Has revised cost
+cost_overrun_flag,0.0,Cost overrun exists
+progress_exp_ratio,0.0,Progress-expenditure alignment
+exp_progress_gap,0.0,Expenditure-progress gap
+physical_progress,0.0,Physical progress
+high_overrun_flag,0.0,High time overrun (>24m)
+progress_3m_change,0.0,3-month progress change
+is_currently_delayed,0.0,Currently delayed
+low_progress_flag,0.0,Low physical progress (<30%)
+prev_physical_progress,0.0,Previous physical progress
