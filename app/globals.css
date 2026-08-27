@@ -1,6 +1,19 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* The document owns the selected theme, so the preference survives every route. */
+html.dark-mode{--background:#0b1520;--foreground:#edf6ff;--card:#142536;--card-foreground:#edf6ff;--primary:#8dc5ed;--primary-foreground:#0b1520;--muted:#1b3042;--muted-foreground:#c0d2df;--border:#3d596d;--input:#193044;--ring:#8dc5ed;color-scheme:dark;background:var(--background)}
+html:not(.dark-mode){color-scheme:light;background:#f4f6f8}
+html.dark-mode body{background:var(--background);color:var(--foreground)}
+html:not(.dark-mode) body{background:#f4f6f8;color:#172536}
+html.dark-mode .landing-page{background:linear-gradient(135deg,#081827 0%,#0b2235 70%,#102f4a 100%);color:var(--foreground)}
+html.dark-mode .landing-nav,html.dark-mode .landing-footer{border-color:color-mix(in srgb,var(--border) 70%,transparent)}
+html.dark-mode .landing-brand b,html.dark-mode .landing-hero-copy h1,html.dark-mode .landing-section h2,html.dark-mode .landing-section h3,html.dark-mode .landing-proof h2,html.dark-mode .landing-footer,html.dark-mode .proof-items b{color:#eef7ff}
+html.dark-mode .landing-brand small,html.dark-mode .landing-actions,html.dark-mode .landing-hero-copy>p,html.dark-mode .landing-section p,html.dark-mode .landing-proof p,html.dark-mode .landing-footer small,html.dark-mode .proof-items small{color:#c9d9e6}
+html.dark-mode .landing-actions a:hover,html.dark-mode .landing-footer a{color:#bfe4ff}
+html.dark-mode .landing-theme{background:#102638;color:#eef7ff;border-color:#41627b}
+html.dark-mode .landing-visual{background:#102f4a;border-color:#4f7c9b;box-shadow:16px 16px 0 #1e4b68}
+
 @theme inline {
   --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); --font-sans: 'Geist', 'Geist Fallback'; --font-mono: 'Geist Mono', monospace;
 }

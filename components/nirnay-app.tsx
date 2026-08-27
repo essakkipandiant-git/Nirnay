@@ -56,7 +56,6 @@ function Landing({dark,onToggleTheme}:{dark:boolean;onToggleTheme:()=>void}){ret
 function Dashboard(){
   const [allRows, setAllRows] = useState<Project[]>([]);
   const [rows,setRows]=useState<Project[]>([]);
-  const [debugMsg, setDebugMsg] = useState('');
 
   useEffect(() => {
     getEnrichedProjects().then(r => { setAllRows(r); setRows(r); });
@@ -81,11 +80,9 @@ function Dashboard(){
   const handleFilter = (m:string,s:string,r:string,st:string) => {
     const filtered = filterProjects(allRows, '', m, s, r, st);
     setRows(filtered);
-    setDebugMsg(`Selected Ministry: ${m}\nSelected Sector: ${s}\nSelected Risk: ${r}\nSelected Status: ${st}\nProjects before filter: ${allRows.length}\nProjects after filter: ${filtered.length}`);
-    console.log(`DATA LOAD DEBUG\n----------------\nSelected Ministry: ${m}\nSelected Sector: ${s}\nSelected Risk: ${r}\nSelected Status: ${st}\nProjects before filter: ${allRows.length}\nProjects after filter: ${filtered.length}`);
   };
 
-  return <><HomeHero/><PageHeader title="Infrastructure Project Monitoring" subtitle="Predictive monitoring and early intervention across the infrastructure portfolio"/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/>{debugMsg && <pre style={{fontSize:'11px', background:'#eee', padding:'10px', color:'#000'}}>{debugMsg}</pre>}<Kpis rows={rows} counts={counts}/><ProjectTable rows={rows.slice().sort((a,b)=>b.riskScore-a.riskScore).slice(0,5)}/><div className="two-col"><Distribution counts={counts}/><Trend/></div><Card title="Early Warning Signals" subtitle="ML signals requiring administrative review"><div className="warnings">{warnings.length?warnings.map(w=><div className="warning-row" key={w.id}><div className="warning-icon"><Zap size={17}/></div><div><b>{w.title}</b><strong>{w.project}</strong><p>{w.detail}</p><small>{w.metric}</small></div><Link href={`/projects/${w.id}`} className="button secondary">View Project</Link></div>):<div className="empty">No warnings for current selection</div>}</div></Card></>
+  return <><HomeHero/><PageHeader title="Infrastructure Project Monitoring" subtitle="Predictive monitoring and early intervention across the infrastructure portfolio"/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><Kpis rows={rows} counts={counts}/><ProjectTable rows={rows.slice().sort((a,b)=>b.riskScore-a.riskScore).slice(0,5)}/><div className="two-col"><Distribution counts={counts}/><Trend/></div><Card title="Early Warning Signals" subtitle="ML signals requiring administrative review"><div className="warnings">{warnings.length?warnings.map(w=><div className="warning-row" key={w.id}><div className="warning-icon"><Zap size={17}/></div><div><b>{w.title}</b><strong>{w.project}</strong><p>{w.detail}</p><small>{w.metric}</small></div><Link href={`/projects/${w.id}`} className="button secondary">View Project</Link></div>):<div className="empty">No warnings for current selection</div>}</div></Card></>
 }
 
 function ProjectsPage(){
@@ -183,8 +180,10 @@ function GenericPage({title,subtitle}:{title:string;subtitle:string}){
 
 function Intelligence(){
   const [answer,setAnswer]=useState('');
+  const [allRows, setAllRows] = useState<Project[]>([]);
   const [rows, setRows] = useState<Project[]>([]);
-  useEffect(() => { getEnrichedProjects().then(setRows); }, []);
+  useEffect(() => { getEnrichedProjects().then(projects => { setAllRows(projects); setRows(projects); }); }, []);
+  const handleFilter = (m:string,s:string,r:string,st:string) => setRows(filterProjects(allRows, '', m, s, r, st));
   return <><PageHeader title="Project Intelligence" subtitle="Query project monitoring data using natural language."/><Notice/><FilterBar allRows={allRows} rows={rows} onFilter={handleFilter}/><Card title="Analytical query" subtitle="Select a question to review structured portfolio results"><div className="querybox"><Search size={18}/><input placeholder="Ask about projects, risks, delays or cost trends..." value={answer} onChange={e=>setAnswer(e.target.value)}/><button className="button primary" onClick={()=>setAnswer(answer||'Projects requiring immediate intervention')}>Analyze</button></div><div className="query-chips">{['Projects requiring immediate intervention','Projects with increasing risk','Highest schedule risk sectors','Why is this project high risk?','Projects with similar historical patterns'].map(q=><button key={q} onClick={()=>setAnswer(q)}>{q}</button>)}</div>{answer&&<div className="intelligence-answer"><span className="eyebrow">STRUCTURED ANALYTICAL RESPONSE</span><h3>Query executed against current prediction payload.</h3><p>Results are based on the latest available ML inferences.</p><ProjectTable title="Matching projects" rows={rows.filter(p => { const q = answer.toLowerCase(); if(q.includes('rail') && !p.ministry.toLowerCase().includes('rail')) return false; if((q.includes('high') || q.includes('increasing')) && p.riskLevel !== 'High') return false; if((q.includes('critical') || q.includes('intervention')) && p.riskLevel !== 'Critical') return false; return true; }).slice(0,5)}/></div>}</Card></>
 }
 
@@ -216,13 +215,19 @@ export default function NirnayApp(){
   const path=usePathname();
   const [menu,setMenu]=useState(false);
   const [dark,setDark]=useState(false);
+  const [themeReady,setThemeReady]=useState(false);
   
   useEffect(()=>{
     const saved=window.localStorage.getItem('nirnay-theme');
-    setDark(saved? saved==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
+    setDark(saved ? saved==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setThemeReady(true);
   },[]);
   
-  useEffect(()=>{if(typeof window!=='undefined'){window.localStorage.setItem('nirnay-theme',dark?'dark':'light')}},[dark]);
+  useEffect(()=>{
+    if(!themeReady) return;
+    window.localStorage.setItem('nirnay-theme',dark?'dark':'light');
+    document.documentElement.classList.toggle('dark-mode',dark);
+  },[dark,themeReady]);
   
   let content:React.ReactNode;
   if(path?.startsWith('/projects/'))content=<Detail id={path.split('/')[2]}/>;
@@ -235,5 +240,5 @@ export default function NirnayApp(){
     const title=path?.includes('data-quality')?'Data Quality':path?.includes('model-performance')?'Model Performance':path?.includes('interventions')?'Intervention Center':path?.includes('warnings')?'Early Warning Signals':path?.includes('analytics')?'Analytics Overview':'Administration';
     content=<GenericPage title={title} subtitle="Portfolio indicators and operational records for administrative review."/>
   }
-  return <div className={`app-shell ${dark?'dark-mode':''}`}><Sidebar open={menu} onClose={()=>setMenu(false)}/><div className="main-area"><Header onMenu={()=>setMenu(true)} onToggleTheme={()=>setDark(v=>!v)} dark={dark}/><main className="content">{content}</main><footer><b>NIRNAY</b><span>National Infrastructure Risk & Nodal Action Intelligence</span><small>Demonstration prototype — data shown is synthetic and does not represent official government records. Predictive outputs are intended to support, not replace, administrative judgement.</small></footer></div></div>
+  return <div className={`app-shell ${dark?'dark-mode':''}`}><Sidebar open={menu} onClose={()=>setMenu(false)}/><div className="main-area"><Header onMenu={()=>setMenu(true)} onToggleTheme={()=>setDark(v=>!v)} dark={dark}/><main className="content">{content}</main><footer><b>NIRNAY</b><span>National Infrastructure Risk & Nodal Action Intelligence</span><small>Demonstration prototype — project data is derived from supplied PAIMANA reports and model-generated predictions; it is not an official government record. Predictive outputs support, but do not replace, administrative judgement.</small></footer></div></div>
 }

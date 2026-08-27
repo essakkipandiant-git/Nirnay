@@ -19,6 +19,18 @@ export interface MLPrediction {
 let _cachedProjects: Project[] | null = null;
 let _cachedPredictions: MLPrediction[] | null = null;
 let _cachedHistory: any = null;
+let _dataLoadPromise: Promise<void> | null = null;
+let _historyLoadPromise: Promise<void> | null = null;
+
+const asNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const asText = (value: unknown, fallback = 'Unknown'): string => {
+  const text = String(value ?? '').trim();
+  return text || fallback;
+};
 
 // Normalizer just in case, though combined data should be clean
 function normalizeId(id: string | number) {
@@ -26,54 +38,72 @@ function normalizeId(id: string | number) {
 }
 
 async function loadData() {
-  if (!_cachedProjects) {
-    const res = await fetch('/nirnay_combined_data.json');
-    if (res.ok) {
-      const data = await res.json();
-      _cachedProjects = data.map((d: any) => ({
-        id: String(d.id),
-        name: d.name || `Project ${d.id}`,
-        ministry: d.ministry || 'Unknown',
-        sector: d.sector || 'Unknown',
-        state: d.state || 'Unknown',
-        originalCost: d.originalCost || 0,
-        revisedCost: d.revisedCost || 0,
-        expenditure: d.expenditure || 0,
-        physicalProgress: d.physicalProgress || 0,
-        financialProgress: d.financialProgress || 0,
-        riskScore: d.riskScore || 0,
-        costRisk: d.costRiskIndicator || 0,
-        delayRisk: Math.round((d.probabilityDelayed || 0) * 100),
-        riskLevel: (d.predictedRiskLevel || 'Low') as RiskLevel,
-        status: d.status || 'Under Implementation',
-        lifecycle: (d.physicalProgress === 100 || String(d.status).toLowerCase() === 'completed') ? (d.timeOverrunMonths > 0 ? 'Completed - Delayed' : 'Completed on Schedule') : 'Active / Ongoing',
-        timeOverrunMonths: d.timeOverrunMonths || 0,
-        primaryDriver: d.primaryDriver || 'Multiple factors',
-        plannedCompletion: d.originalCompletion || 'N/A',
-        expectedCompletion: d.anticipatedCompletion || 'N/A',
-        implementingAgency: d.agency || 'N/A',
-        riskHistory: [] // Will be populated dynamically if needed
-      }));
-      
-      _cachedPredictions = data.map((d: any) => ({
+  if (_cachedProjects) return;
+  if (!_dataLoadPromise) {
+    _dataLoadPromise = (async () => {
+      const res = await fetch('/nirnay_combined_data.json');
+      if (!res.ok) throw new Error(`Unable to load project data (${res.status}).`);
+
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) throw new Error('Project data has an invalid format.');
+
+      const records = data.filter((record: any) => record && record.id != null);
+      _cachedProjects = records.map((d: any) => {
+        const physicalProgress = asNumber(d.physicalProgress);
+        const timeOverrunMonths = asNumber(d.timeOverrunMonths);
+        const status = asText(d.status, 'Under Implementation');
+        const probabilityDelayed = Math.max(0, Math.min(1, asNumber(d.probabilityDelayed)));
+
+        return {
+          id: String(d.id),
+          name: asText(d.name, `Project ${d.id}`),
+          ministry: asText(d.ministry),
+          sector: asText(d.sector),
+          state: asText(d.state),
+          originalCost: asNumber(d.originalCost),
+          revisedCost: asNumber(d.revisedCost),
+          expenditure: asNumber(d.expenditure),
+          physicalProgress,
+          financialProgress: asNumber(d.financialProgress),
+          riskScore: asNumber(d.riskScore),
+          costRisk: asNumber(d.costRiskIndicator),
+          delayRisk: Math.round(probabilityDelayed * 100),
+          riskLevel: (d.predictedRiskLevel || 'Low') as RiskLevel,
+          status,
+          lifecycle: physicalProgress === 100 || status.toLowerCase() === 'completed'
+            ? (timeOverrunMonths > 0 ? 'Completed - Delayed' : 'Completed on Schedule')
+            : 'Active / Ongoing',
+          timeOverrunMonths,
+          primaryDriver: asText(d.primaryDriver, 'Multiple factors'),
+          plannedCompletion: asText(d.originalCompletion, 'N/A'),
+          expectedCompletion: asText(d.anticipatedCompletion, 'N/A'),
+          implementingAgency: asText(d.agency, 'N/A'),
+          riskHistory: []
+        };
+      });
+
+      _cachedPredictions = records.map((d: any) => ({
         project_id: String(d.id),
         risk_level_ml: (d.predictedRiskLevel || 'Low') as RiskLevel,
-        probability_delayed_6m: d.probabilityDelayed || 0,
-        risk_confidence: d.probabilityDelayed || 0,
-        probability_critical: d.probabilityCritical || 0,
-        probability_high: d.probabilityHigh || 0,
-        probability_medium: d.probabilityMedium || 0,
-        probability_low: d.probabilityLow || 0,
-        top_risk_driver_1: d.topDriver1 || d.primaryDriver || '',
-        top_risk_driver_2: d.topDriver2 || '',
-        top_risk_driver_3: d.topDriver3 || '',
+        probability_delayed_6m: Math.max(0, Math.min(1, asNumber(d.probabilityDelayed))),
+        risk_confidence: Math.max(0, Math.min(1, asNumber(d.probabilityDelayed))),
+        probability_critical: Math.max(0, Math.min(1, asNumber(d.probabilityCritical))),
+        probability_high: Math.max(0, Math.min(1, asNumber(d.probabilityHigh))),
+        probability_medium: Math.max(0, Math.min(1, asNumber(d.probabilityMedium))),
+        probability_low: Math.max(0, Math.min(1, asNumber(d.probabilityLow))),
+        top_risk_driver_1: asText(d.topDriver1 || d.primaryDriver, ''),
+        top_risk_driver_2: asText(d.topDriver2, ''),
+        top_risk_driver_3: asText(d.topDriver3, ''),
         explanation: d.explanation
       }));
-    } else {
+    })().catch((error) => {
+      _dataLoadPromise = null;
       _cachedProjects = [];
       _cachedPredictions = [];
-    }
+      console.error('NIRNAY project data loading failed.', error);
+    });
   }
+  await _dataLoadPromise;
 }
 
 export async function getMLPredictions(): Promise<MLPrediction[]> {
@@ -83,21 +113,6 @@ export async function getMLPredictions(): Promise<MLPrediction[]> {
 
 export async function getEnrichedProjects(): Promise<Project[]> {
   await loadData();
-  
-  console.log(`DATA LOAD DEBUG
-----------------`);
-  console.log(`Project records loaded: ${_cachedProjects?.length || 0}`);
-  console.log(`Prediction records loaded: ${_cachedPredictions?.length || 0}`);
-  console.log(`Historical records loaded: ${Object.keys(_cachedHistory || {}).length}`);
-  console.log(`Successful project/prediction joins: ${_cachedProjects?.filter(p => _cachedPredictions?.some(pr => pr.project_id === p.id)).length || 0}`);
-  console.log(`Projects with missing prediction: ${_cachedProjects?.filter(p => !_cachedPredictions?.some(pr => pr.project_id === p.id)).length || 0}`);
-  console.log(`Valid risk scores: ${_cachedProjects?.filter(p => p.riskScore > 0).length || 0}`);
-  console.log(`Valid delay probabilities: ${_cachedProjects?.filter(p => p.delayRisk > 0).length || 0}`);
-  console.log(`Critical: ${_cachedProjects?.filter(p => p.riskLevel === 'Critical').length || 0}`);
-  console.log(`High: ${_cachedProjects?.filter(p => p.riskLevel === 'High').length || 0}`);
-  console.log(`Medium: ${_cachedProjects?.filter(p => p.riskLevel === 'Medium').length || 0}`);
-  console.log(`Low: ${_cachedProjects?.filter(p => p.riskLevel === 'Low').length || 0}`);
-  console.log(`Early warnings: ${_cachedProjects?.filter(p => p.riskLevel === 'Critical' && p.delayRisk > 75).length || 0}`);
   return _cachedProjects || [];
 }
 
@@ -143,21 +158,34 @@ export async function getMLWarnings() {
 }
 
 export async function getProjectHistoryData(id: string) {
-  if (!_cachedHistory) {
-    const res = await fetch('/nirnay_project_history.json');
-    if (res.ok) _cachedHistory = await res.json();
-    else _cachedHistory = {};
-  }
+  await loadHistory();
   return _cachedHistory[normalizeId(id)] || [];
 }
 
 export async function getPortfolioHistoryData() {
-  if (!_cachedHistory) {
-    const res = await fetch('/nirnay_project_history.json');
-    if (res.ok) _cachedHistory = await res.json();
-    else _cachedHistory = {};
-  }
+  await loadHistory();
   return _cachedHistory;
+}
+
+async function loadHistory() {
+  if (_cachedHistory) return;
+  if (!_historyLoadPromise) {
+    _historyLoadPromise = (async () => {
+      const res = await fetch('/nirnay_project_history.json');
+      if (!res.ok) throw new Error(`Unable to load project history (${res.status}).`);
+
+      const history: unknown = await res.json();
+      if (!history || Array.isArray(history) || typeof history !== 'object') {
+        throw new Error('Project history has an invalid format.');
+      }
+      _cachedHistory = history;
+    })().catch((error) => {
+      _historyLoadPromise = null;
+      _cachedHistory = {};
+      console.error('NIRNAY project history loading failed.', error);
+    });
+  }
+  await _historyLoadPromise;
 }
 
 
@@ -193,5 +221,5 @@ export function getUniqueSectors(projects: Project[]): string[] {
   return Array.from(new Set(projects.map(p => p.sector).filter(Boolean))).sort();
 }
 export function getUniqueStatuses(projects: Project[]): string[] {
-  return Array.from(new Set(projects.map(p => p.lifecycle).filter(Boolean))).sort();
+  return Array.from(new Set(projects.map(p => p.lifecycle).filter((value): value is string => Boolean(value)))).sort();
 }
