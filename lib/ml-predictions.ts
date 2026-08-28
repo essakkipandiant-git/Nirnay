@@ -159,7 +159,11 @@ export async function getMLWarnings() {
 
 export async function getProjectHistoryData(id: string) {
   await loadHistory();
-  return _cachedHistory[normalizeId(id)] || [];
+  if (!_cachedHistory) return [];
+  const strId = String(id);
+  const normId = normalizeId(strId);
+  const stripId = strId.replace(/^0+/, '');
+  return _cachedHistory[normId] || _cachedHistory[strId] || _cachedHistory[stripId] || [];
 }
 
 export async function getPortfolioHistoryData() {
