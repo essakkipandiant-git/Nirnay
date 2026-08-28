@@ -153,7 +153,39 @@ function Detail({id}:{id:string}){
         <Disclaimer/>
       </>
     )}
-  </Card>}<Card title="Risk Trajectory" subtitle="Monthly risk history">{history.length ? <><div className="trajectory">{history.slice(-12).map((point:any, i:number)=>{const scoreVal = typeof point.score==='number'?point.score:(typeof point.ep==='number'&&point.ep>0?Math.round(point.ep):(point.r==='Critical'?85:point.r==='High'?70:point.r==='Medium'?45:20));const color = scoreVal > 75 ? '#ae5a5b' : scoreVal > 50 ? '#c27a43' : scoreVal > 25 ? '#b08c3c' : '#5a9474';return <div key={i}><span>{scoreVal}%</span><div style={{height:`${scoreVal}%`, background: color}} title={`Month: ${point.d}, Risk: ${scoreVal}%`}/><small>{String(point.d).split('-')[1]||point.d}</small></div>;})}</div></> : <div className="empty">Insufficient historical data</div>}</Card>{renderTabContent()}</div></>
+  </Card>}<Card title="Risk Trajectory" subtitle="Monthly risk history">{(() => {
+    const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // 1. Sort chronologically by YYYY-MM (ISO string sort = chronological, year preserved)
+    const sorted = [...history].sort((a:any, b:any) => String(a.d) < String(b.d) ? -1 : String(a.d) > String(b.d) ? 1 : 0);
+    // 2. Deduplicate: one record per YYYY-MM (last record per period wins)
+    const seen = new Map<string, any>();
+    for (const pt of sorted) { seen.set(String(pt.d), pt); }
+    const deduped = Array.from(seen.values());
+    // 3. Take last 12 chronological records
+    const points = deduped.slice(-12);
+    if (!points.length) return <div className="empty">Insufficient historical data</div>;
+    // 4. Compute scores and labels
+    const items = points.map((pt:any) => {
+      // ep is the actual historical risk score (0-100); s is a string status, not a number
+      const scoreVal = (typeof pt.ep === 'number' && pt.ep > 0)
+        ? Math.round(pt.ep)
+        : (pt.r === 'Critical' ? 85 : pt.r === 'High' ? 70 : pt.r === 'Medium' ? 45 : 20);
+      const color = scoreVal > 75 ? '#ae5a5b' : scoreVal > 50 ? '#c27a43' : scoreVal > 25 ? '#b08c3c' : '#5a9474';
+      // Label: "Apr 2025" from "2025-04"
+      const parts = String(pt.d).split('-');
+      const year = parts[0] || '';
+      const monthIdx = parts[1] ? parseInt(parts[1], 10) - 1 : -1;
+      const label = (monthIdx >= 0 && monthIdx < 12) ? `${MONTH_ABBR[monthIdx]} ${year}` : String(pt.d);
+      return { scoreVal, color, label, d: String(pt.d) };
+    });
+    return <><div className="trajectory">{items.map((item, i) => (
+      <div key={i}>
+        <span>{item.scoreVal}%</span>
+        <div style={{height:`${item.scoreVal}%`, background: item.color}} title={`${item.d} — Risk: ${item.scoreVal}%`}/>
+        <small>{item.label}</small>
+      </div>
+    ))}</div></>;
+  })()}</Card>{renderTabContent()}</div></>
 }
 
 function GenericPage({title,subtitle}:{title:string;subtitle:string}){
