@@ -1,26 +1,23 @@
 {
-  "model_name": "HistGradientBoosting",
-  "model_version": "1.0.0",
-  "training_date": "2026-08-26 18:34:34",
-  "dataset_name": "nirnay_future_risk_training.csv",
-  "target_name": "future_delayed_6m",
-  "training_samples": 9878,
-  "validation_samples": 2830,
-  "test_samples": 2267,
-  "feature_count": 26,
+  "model_name": "Random Forest",
+  "model_version": "2.0.0",
+  "training_date": "2026-08-28 11:55:52",
+  "target_col": "future_delayed_6m",
+  "feature_count": 27,
   "feature_names": [
     "original_cost",
     "anticipated_cost",
     "expenditure",
     "expenditure_ratio",
     "cost_overrun_pct",
-    "cost_variance_pct",
     "cost_growth_ratio",
     "has_revised_cost",
     "cost_overrun_flag",
-    "time_overrun_months",
-    "months_remaining",
     "project_age_months",
+    "months_remaining",
+    "planned_duration_months",
+    "schedule_elapsed_ratio",
+    "time_overrun_months",
     "schedule_pressure",
     "remaining_vs_overrun",
     "high_overrun_flag",
@@ -28,65 +25,82 @@
     "exp_progress_gap",
     "progress_exp_ratio",
     "low_progress_flag",
-    "is_currently_delayed",
-    "progress_3m_change",
-    "exp_3m_change",
     "prev_physical_progress",
     "prev_expenditure_ratio",
+    "progress_3m_change",
+    "exp_3m_change",
     "sector",
-    "state"
+    "state",
+    "agency"
   ],
-  "selected_threshold": 0.6,
-  "risk_thresholds": {
-    "low_upper": 0.25,
-    "medium_upper": 0.5,
-    "high_upper": 0.75
+  "thresholds": {
+    "decision_threshold": 0.6,
+    "low_upper": 0.35,
+    "medium_upper": 0.6,
+    "high_upper": 0.85
   },
-  "dataset_date_range": {
-    "train": "2022-04-01 -> 2023-03-01",
-    "valid": "2023-04-01 -> 2023-07-01",
-    "test": "2023-08-01 -> 2023-09-01"
+  "metrics": {
+    "validation": {
+      "accuracy": 0.9674911660777386,
+      "balanced_accuracy": 0.9667229974409735,
+      "macro_f1": 0.9587966259950308,
+      "weighted_f1": 0.9677586903879757,
+      "roc_auc": 0.990140505045628,
+      "pr_auc": 0.9961277882121621,
+      "brier_score": 0.02525186280751186,
+      "precision_not_delayed": 0.9159235668789809,
+      "recall_not_delayed": 0.9651006711409396,
+      "f1_not_delayed": 0.9398692810457516,
+      "precision_delayed": 0.9872860635696822,
+      "recall_delayed": 0.9683453237410072,
+      "f1_delayed": 0.97772397094431,
+      "confusion_matrix": [
+        [
+          719,
+          26
+        ],
+        [
+          66,
+          2019
+        ]
+      ]
+    },
+    "test": {
+      "accuracy": 0.9563299514777238,
+      "balanced_accuracy": 0.9582741954361204,
+      "macro_f1": 0.954152931421522,
+      "weighted_f1": 0.9565106353285422,
+      "roc_auc": 0.9790853778149227,
+      "pr_auc": 0.9897144696198074,
+      "brier_score": 0.03792085991590515,
+      "precision_not_delayed": 0.9228224917309813,
+      "recall_not_delayed": 0.9665127020785219,
+      "f1_not_delayed": 0.9441624365482234,
+      "precision_delayed": 0.9786764705882353,
+      "recall_delayed": 0.9500356887937188,
+      "f1_delayed": 0.9641434262948207,
+      "confusion_matrix": [
+        [
+          837,
+          29
+        ],
+        [
+          70,
+          1331
+        ]
+      ]
+    }
   },
-  "preprocessing_steps": [
-    "Column standardization",
-    "Historical enrichment from project-month data",
-    "Feature engineering (cost/schedule/progress/derived)",
-    "Categorical encoding (sector, state)",
-    "Median imputation",
-    "StandardScaler (Logistic Regression only)"
-  ],
-  "class_balancing_method": "class_weight='balanced' / scale_pos_weight / is_unbalance",
   "excluded_leakage_columns": [
     "future_delayed_6m",
     "future_risk_level_6m",
     "future_time_overrun_months",
     "future_cost_overrun_pct",
-    "target_date_6m"
-  ],
-  "model_metrics": {
-    "validation": {
-      "accuracy": 0.9643109540636042,
-      "precision": 0.9769230769230769,
-      "recall": 0.9745803357314149,
-      "f1": 0.975750300120048,
-      "roc_auc": 0.9915754912848245,
-      "pr_auc": 0.997343012763521,
-      "delayed_recall": 0.9745803357314149,
-      "delayed_precision": 0.9769230769230769,
-      "false_negative_rate": 0.02541966426858513,
-      "false_positive_rate": 0.06442953020134229
-    },
-    "test": {
-      "accuracy": 0.9479488310542568,
-      "precision": 0.9645184648805214,
-      "recall": 0.9507494646680942,
-      "f1": 0.9575844716031632,
-      "roc_auc": 0.9792662944482085,
-      "pr_auc": 0.9903410058728881,
-      "delayed_recall": 0.9507494646680942,
-      "delayed_precision": 0.9645184648805214,
-      "false_negative_rate": 0.04925053533190578,
-      "false_positive_rate": 0.05658198614318707
-    }
-  }
+    "target_date_6m",
+    "target_next_risk_level",
+    "target_horizon_months",
+    "risk_level_derived",
+    "risk_score_derived",
+    "source_format"
+  ]
 }

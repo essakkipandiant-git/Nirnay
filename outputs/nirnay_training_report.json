@@ -1,88 +1,114 @@
 {
-  "pipeline": "NIRNAY ML Training Pipeline",
-  "version": "1.0.0",
-  "training_date": "2026-08-26 18:34:34",
-  "selected_model": "HistGradientBoosting",
-  "threshold": 0.6,
-  "risk_thresholds": {
-    "low_upper": 0.25,
-    "medium_upper": 0.5,
-    "high_upper": 0.75
+  "pipeline": "NIRNAY ML Training Pipeline v2.0",
+  "version": "2.0.0",
+  "training_date": "2026-08-28 11:55:52",
+  "selected_model": "Random Forest",
+  "thresholds": {
+    "decision_threshold": 0.6,
+    "low_upper": 0.35,
+    "medium_upper": 0.6,
+    "high_upper": 0.85
   },
   "validation_metrics": {
-    "accuracy": 0.9643109540636042,
-    "precision": 0.9769230769230769,
-    "recall": 0.9745803357314149,
-    "f1": 0.975750300120048,
-    "roc_auc": 0.9915754912848245,
-    "pr_auc": 0.997343012763521,
-    "delayed_recall": 0.9745803357314149,
-    "delayed_precision": 0.9769230769230769,
-    "false_negative_rate": 0.02541966426858513,
-    "false_positive_rate": 0.06442953020134229
+    "accuracy": 0.9674911660777386,
+    "balanced_accuracy": 0.9667229974409735,
+    "macro_f1": 0.9587966259950308,
+    "weighted_f1": 0.9677586903879757,
+    "roc_auc": 0.990140505045628,
+    "pr_auc": 0.9961277882121621,
+    "brier_score": 0.02525186280751186,
+    "precision_not_delayed": 0.9159235668789809,
+    "recall_not_delayed": 0.9651006711409396,
+    "f1_not_delayed": 0.9398692810457516,
+    "precision_delayed": 0.9872860635696822,
+    "recall_delayed": 0.9683453237410072,
+    "f1_delayed": 0.97772397094431,
+    "confusion_matrix": [
+      [
+        719,
+        26
+      ],
+      [
+        66,
+        2019
+      ]
+    ]
   },
   "test_metrics": {
-    "accuracy": 0.9479488310542568,
-    "precision": 0.9645184648805214,
-    "recall": 0.9507494646680942,
-    "f1": 0.9575844716031632,
-    "roc_auc": 0.9792662944482085,
-    "pr_auc": 0.9903410058728881,
-    "delayed_recall": 0.9507494646680942,
-    "delayed_precision": 0.9645184648805214,
-    "false_negative_rate": 0.04925053533190578,
-    "false_positive_rate": 0.05658198614318707
+    "accuracy": 0.9563299514777238,
+    "balanced_accuracy": 0.9582741954361204,
+    "macro_f1": 0.954152931421522,
+    "weighted_f1": 0.9565106353285422,
+    "roc_auc": 0.9790853778149227,
+    "pr_auc": 0.9897144696198074,
+    "brier_score": 0.03792085991590515,
+    "precision_not_delayed": 0.9228224917309813,
+    "recall_not_delayed": 0.9665127020785219,
+    "f1_not_delayed": 0.9441624365482234,
+    "precision_delayed": 0.9786764705882353,
+    "recall_delayed": 0.9500356887937188,
+    "f1_delayed": 0.9641434262948207,
+    "confusion_matrix": [
+      [
+        837,
+        29
+      ],
+      [
+        70,
+        1331
+      ]
+    ]
   },
   "top_features": [
     {
       "feature": "remaining_vs_overrun",
-      "display_name": "Remaining time vs overrun",
-      "shap_importance": 1.7736143727762994
+      "importance": 0.2225113067318008,
+      "display_name": "Remaining Time vs Slippage"
+    },
+    {
+      "feature": "schedule_pressure",
+      "importance": 0.18469229551558694,
+      "display_name": "Schedule Pressure Ratio"
     },
     {
       "feature": "time_overrun_months",
-      "display_name": "Time overrun",
-      "shap_importance": 1.2128891195601978
+      "importance": 0.13324893274393412,
+      "display_name": "Current Time Slippage (Months)"
     },
     {
-      "feature": "months_remaining",
-      "display_name": "Months remaining",
-      "shap_importance": 0.48995825870048987
+      "feature": "agency",
+      "importance": 0.1181421774789656,
+      "display_name": "Implementing Agency"
     },
     {
       "feature": "state",
-      "display_name": "State",
-      "shap_importance": 0.44651810319524415
+      "importance": 0.10428463508038284,
+      "display_name": "State / Region"
     },
     {
-      "feature": "prev_expenditure_ratio",
-      "display_name": "Previous expenditure ratio",
-      "shap_importance": 0.44642633306683555
+      "feature": "schedule_elapsed_ratio",
+      "importance": 0.08102206509793654,
+      "display_name": "Schedule Elapsed Ratio"
     },
     {
-      "feature": "original_cost",
-      "display_name": "Original cost",
-      "shap_importance": 0.252949104414921
+      "feature": "months_remaining",
+      "importance": 0.04025860284491742,
+      "display_name": "Months to Anticipated Completion"
     },
     {
-      "feature": "anticipated_cost",
-      "display_name": "Anticipated cost",
-      "shap_importance": 0.2387761944818805
-    },
-    {
-      "feature": "sector",
-      "display_name": "Sector",
-      "shap_importance": 0.23324327826048974
+      "feature": "high_overrun_flag",
+      "importance": 0.027549942549031682,
+      "display_name": "High Time Overrun Flag (>24m)"
     },
     {
       "feature": "project_age_months",
-      "display_name": "Project age",
-      "shap_importance": 0.21888824539145704
+      "importance": 0.01749768411758922,
+      "display_name": "Project Age (Months Elapsed)"
     },
     {
-      "feature": "cost_variance_pct",
-      "display_name": "Cost variance",
-      "shap_importance": 0.2124987132310391
+      "feature": "prev_expenditure_ratio",
+      "importance": 0.010413342370354624,
+      "display_name": "Previous Snapshot Expenditure Ratio"
     }
   ]
 }

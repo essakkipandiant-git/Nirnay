@@ -1,27 +1,28 @@
-feature,shap_importance,display_name
-remaining_vs_overrun,1.7736143727762994,Remaining time vs overrun
-time_overrun_months,1.2128891195601978,Time overrun
-months_remaining,0.48995825870048987,Months remaining
-state,0.44651810319524415,State
-prev_expenditure_ratio,0.44642633306683555,Previous expenditure ratio
-original_cost,0.252949104414921,Original cost
-anticipated_cost,0.2387761944818805,Anticipated cost
-sector,0.23324327826048974,Sector
-project_age_months,0.21888824539145704,Project age
-cost_variance_pct,0.2124987132310391,Cost variance
-expenditure_ratio,0.20746393226889356,Expenditure ratio
-exp_3m_change,0.20652761595254426,3-month expenditure change
-expenditure,0.20461887598395403,Cumulative expenditure
-schedule_pressure,0.15763598264204717,Schedule pressure
-cost_overrun_pct,0.10521237084545922,Cost overrun
-cost_growth_ratio,0.06041046035018292,Cost escalation ratio
-has_revised_cost,0.008841801667978546,Has revised cost
-cost_overrun_flag,0.0,Cost overrun exists
-progress_exp_ratio,0.0,Progress-expenditure alignment
-exp_progress_gap,0.0,Expenditure-progress gap
-physical_progress,0.0,Physical progress
-high_overrun_flag,0.0,High time overrun (>24m)
-progress_3m_change,0.0,3-month progress change
-is_currently_delayed,0.0,Currently delayed
-low_progress_flag,0.0,Low physical progress (<30%)
-prev_physical_progress,0.0,Previous physical progress
+feature,importance,display_name
+remaining_vs_overrun,0.2225113067318008,Remaining Time vs Slippage
+schedule_pressure,0.18469229551558694,Schedule Pressure Ratio
+time_overrun_months,0.13324893274393412,Current Time Slippage (Months)
+agency,0.1181421774789656,Implementing Agency
+state,0.10428463508038284,State / Region
+schedule_elapsed_ratio,0.08102206509793654,Schedule Elapsed Ratio
+months_remaining,0.04025860284491742,Months to Anticipated Completion
+high_overrun_flag,0.027549942549031682,High Time Overrun Flag (>24m)
+project_age_months,0.01749768411758922,Project Age (Months Elapsed)
+prev_expenditure_ratio,0.010413342370354624,Previous Snapshot Expenditure Ratio
+planned_duration_months,0.01021049181056411,Planned Duration (Months)
+expenditure_ratio,0.00856483118544322,Expenditure Ratio (% of Anticipated)
+anticipated_cost,0.006972433273620907,Anticipated Cost
+original_cost,0.0064484281335881,Original Approved Cost
+expenditure,0.005767804611459738,Cumulative Expenditure
+exp_3m_change,0.0057505333085821056,3-Month Expenditure Acceleration (%)
+sector,0.005365246924790133,Infrastructure Sector
+cost_overrun_flag,0.005027642703132451,Cost Overrun Flag
+cost_overrun_pct,0.002666373179788053,Cost Overrun (%)
+cost_growth_ratio,0.0026018685971839696,Cost Escalation Ratio
+has_revised_cost,0.0010033617413474124,Cost Revision Indicator
+physical_progress,0.0,Physical Progress (%)
+exp_progress_gap,0.0,Expenditure-Progress Alignment Gap
+progress_exp_ratio,0.0,Progress-to-Expenditure Ratio
+progress_3m_change,0.0,3-Month Progress Velocity (%)
+low_progress_flag,0.0,Low Progress Warning Flag (<30%)
+prev_physical_progress,0.0,Previous Snapshot Physical Progress

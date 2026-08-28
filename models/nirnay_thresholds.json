@@ -1,15 +1,15 @@
 {
   "decision_threshold": 0.6,
-  "risk_levels": {
-    "Low": "P < 0.25",
-    "Medium": "0.25 <= P < 0.50",
-    "High": "0.50 <= P < 0.75",
-    "Critical": "P >= 0.75"
-  },
   "risk_thresholds": {
-    "low_upper": 0.25,
-    "medium_upper": 0.5,
-    "high_upper": 0.75
+    "decision_threshold": 0.6,
+    "low_upper": 0.35,
+    "medium_upper": 0.6,
+    "high_upper": 0.85
   },
-  "note": "Initial operational risk bands calibrated using the validation set."
+  "risk_bands": {
+    "Low": "P < 0.35",
+    "Medium": "0.35 <= P < 0.60",
+    "High": "0.60 <= P < 0.85",
+    "Critical": "P >= 0.85"
+  }
 }

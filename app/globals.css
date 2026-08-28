@@ -25,3 +25,39 @@ html.dark-mode .landing-visual{background:#102f4a;border-color:#4f7c9b;box-shado
 
 /* === Dark-mode visibility fixes (merged from friend's version) === */
 top-left{display:flex;align-items:center;gap:12px}.dark-mode .top-left .top-title{color:#b9d9f0 !important}.dark-mode .risk-critical{color:#ff9999 !important;background:#4a1d1f !important;border:1px solid #732a2d}.dark-mode .risk-high{color:#ffc280 !important;background:#452b17 !important;border:1px solid #734821}.dark-mode .risk-medium{color:#ffe680 !important;background:#403817 !important;border:1px solid #736321}.dark-mode .risk-low{color:#9ee6bf !important;background:#193b2a !important;border:1px solid #2a6645}.dark-mode .risk-unavailable{color:#b0c4de !important;background:#223344 !important}.dark-mode .project-link{color:#7ec2f4 !important;font-weight:700}.dark-mode .project-link:hover{color:#bfe3fd !important;text-decoration:underline}.dark-mode .view-link{color:#7ec2f4 !important;font-weight:700}.dark-mode .view-link:hover{color:#bfe3fd !important}.dark-mode .table-wrap td small{color:#a1b7c9 !important}.dark-mode table th{background:#1b2a38 !important;color:#b0c8dc !important;border-color:#2c445a !important}.dark-mode table td{border-color:#263a4d !important;color:#d0e2f0 !important}.dark-mode tr:hover td{background:#1e3144 !important}.dark-mode .trajectory>div{color:#a1b7c9 !important}.dark-mode .trajectory small{color:#a1b7c9 !important}.dark-mode .risk-metrics div{background:#1c2e40 !important;border:1px solid #2e475d}.dark-mode .risk-metrics span{color:#a1b7c9 !important}.dark-mode .detail-hero{background:#142536 !important;border-color:#3d596d !important}.dark-mode .detail-hero h2{color:#f4f9fd !important}.dark-mode .detail-hero p{color:#c0d2df !important}.dark-mode .detail-hero .eyebrow{color:#8da9be !important}.dark-mode .assessment,.dark-mode .scenario-note{background:#182b3a !important;border-color:#3b6686 !important;color:#c0d2df !important}
+/* === Header UI Fixes === */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.top-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+.top-title span {
+  display: inline !important;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+@media (max-width: 720px) {
+  .top-title {
+    font-size: 14px;
+    gap: 6px;
+  }
+  .top-title span {
+    font-size: 13px;
+  }
+}

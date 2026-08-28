@@ -3,10 +3,11 @@ export interface RiskPoint { month: string; value: number }
 export interface Project {
   id: string; name: string; ministry: string; sector: string; state: string
   originalCost: number; revisedCost: number; expenditure: number
-  physicalProgress: number; financialProgress: number; riskScore: number
+  physicalProgress: number; physicalProgressRaw?: number | null; financialProgress: number; riskScore: number
   costRisk: number; delayRisk: number; riskLevel: RiskLevel; status: string
   primaryDriver: string; plannedCompletion: string; expectedCompletion: string
   implementingAgency: string; riskHistory: RiskPoint[]; lifecycle?: string; timeOverrunMonths?: number;
+  reportDate?: string; originalCompletion?: string; anticipatedCompletion?: string; probabilityDelayed?: number;
 }
 
 export const projects: Project[] = [
@@ -27,4 +28,4 @@ export const warnings = [
 ]
 export const formatCr = (n:number) => `₹${n.toLocaleString('en-IN')} Cr`
 export const riskClass = (level:RiskLevel) => ({Critical:'risk-critical',High:'risk-high',Medium:'risk-medium',Low:'risk-low'}[level])
-export const projectById = (id:string) => projects.find(p => p.id === id) ?? projects[0]
+export const projectById = (id:string): Project | undefined => projects.find(p => p.id === id)
